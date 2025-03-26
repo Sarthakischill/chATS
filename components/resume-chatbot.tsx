@@ -82,7 +82,11 @@ export function ResumeChat() {
       
       // Get response from Gemini API
       const lastMessages = messages.slice(-6).concat(userMessage); // Include up to last 6 messages for context
-      const response = await getChatResponse(lastMessages, savedResumeText);
+      const mappedMessages = lastMessages.map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.content
+      }));
+      const response = await getChatResponse(mappedMessages, savedResumeText);
       
       const botMessage: Message = {
         id: Date.now().toString(),
