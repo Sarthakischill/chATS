@@ -1,10 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
   eslint: {
     ignoreDuringBuilds: true,
   },
-  images: { unoptimized: true },
+  images: { 
+    domains: ['sswsfvjhixtqgxsagxbu.supabase.co'] 
+  },
+  swcMinify: true,
 };
 
 module.exports = nextConfig;
