@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+@layer base {
+  :root {
+    /* Light theme with warm colors to match orange/amber accent */
+    --background: 30 20% 97%;
+    --foreground: 20 10% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 20 10% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 10% 15%;
+    --primary: 24 95% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 30 20% 94%;
+    --secondary-foreground: 20 10% 15%;
+    --muted: 30 10% 92%;
+    --muted-foreground: 20 10% 40%;
+    --accent: 24 95% 90%;
+    --accent-foreground: 24 95% 30%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 20 15% 85%;
+    --input: 20 15% 85%;
+    --ring: 24 95% 53%;
+    --chart-1: 24 95% 53%;
+    --chart-2: 35 85% 65%;
+    --chart-3: 45 70% 50%;
+    --chart-4: 15 80% 45%;
+    --chart-5: 5 75% 55%;
+    --radius: 0.5rem;
+  }
+  .dark {
+    /* Dark theme with exact colors from screenshot */
+    --background: 0 0% 8%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 24 100% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 70%;
+    --accent: 24 100% 60%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 24 100% 60%;
+    --chart-1: 24 100% 60%;
+    --chart-2: 35 85% 65%;
+    --chart-3: 45 70% 50%;
+    --chart-4: 15 80% 45%;
+    --chart-5: 5 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground min-h-screen w-full overflow-x-hidden;
+  }
+  html {
+    @apply overflow-x-hidden;
+  }
+  main {
+    @apply w-full overflow-x-visible;
+  }
+}
+
+/* Grid pattern background */
+.bg-grid-pattern {
+  background-image: 
+    linear-gradient(to right, hsla(var(--primary) / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, hsla(var(--primary) / 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Scroll reveal animations */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s cubic-bezier(0.5, 0, 0, 1);
+}
+
+.reveal-on-scroll.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Staggered animation delays for children */
+.reveal-children > *:nth-child(1) { transition-delay: 0.1s; }
+.reveal-children > *:nth-child(2) { transition-delay: 0.2s; }
+.reveal-children > *:nth-child(3) { transition-delay: 0.3s; }
+.reveal-children > *:nth-child(4) { transition-delay: 0.4s; }
+.reveal-children > *:nth-child(5) { transition-delay: 0.5s; }
+.reveal-children > *:nth-child(6) { transition-delay: 0.6s; }
+.reveal-children > *:nth-child(7) { transition-delay: 0.7s; }
+.reveal-children > *:nth-child(8) { transition-delay: 0.8s; }
+.reveal-children > *:nth-child(9) { transition-delay: 0.9s; }
