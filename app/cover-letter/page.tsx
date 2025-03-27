@@ -19,6 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { saveCoverLetter } from "@/lib/cover-letter-service";
 import { useRouter } from "next/navigation";
+import { saveJobDescription } from '@/lib/supabase';
 
 export default function CoverLetterPage() {
   const { user } = useAuth();
@@ -86,42 +87,42 @@ export default function CoverLetterPage() {
       return;
     }
     
-    if ((!resumeText && !resumeFile) || !jobDescription || !companyName || !position) {
-      setError("Please fill in all required fields");
+    if (!resumeText || !jobDescription || !companyName || !position) {
+      setError("Please fill in all required fields.");
       return;
     }
-
+    
     setIsGenerating(true);
     setError("");
-
+    
     try {
-      let result;
-      
-      // If we have a PDF file, generate directly with Gemini
-      if (resumeFile && resumeFile.type === "application/pdf") {
-        result = await generateCoverLetterFromPDF(
-          resumeFile,
-          jobDescription,
-          companyName,
-          position,
-          { formalTone, includingSkills }
-        );
-      } else {
-        // Otherwise, use the text-based generation
-        result = await generateCoverLetter(
-          resumeText,
-          jobDescription,
-          companyName,
-          position,
-          { formalTone, includingSkills }
-        );
+      // Save job description separately
+      try {
+        await saveJobDescription(user.id, {
+          title: `${position} at ${companyName}`,
+          company_name: companyName,
+          description: jobDescription
+        });
+        console.log('Job description saved successfully');
+      } catch (jobSaveError) {
+        console.error('Error saving job description:', jobSaveError);
+        // Continue with cover letter generation even if job description save fails
       }
       
-      setCoverLetter(result.coverLetter);
-      setMetadata(result.metadata);
+      // Call Gemini API to generate cover letter
+      const response = await generateCoverLetter(
+        resumeText,
+        jobDescription,
+        companyName,
+        position,
+        { formalTone, includingSkills }
+      );
+      
+      setCoverLetter(response.coverLetter);
+      setMetadata(response.metadata || {});
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Failed to generate cover letter. Please try again or check your API key.");
+      console.error('Error generating cover letter:', err);
+      setError(err.message || 'Failed to generate cover letter. Please try again.');
     } finally {
       setIsGenerating(false);
     }

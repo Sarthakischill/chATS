@@ -4,9 +4,10 @@ import { useState, useRef, useEffect } from 'react';
 import { Header } from '@/components/header';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { 
   Check, 
   Send, 
@@ -16,11 +17,14 @@ import {
   FileIcon, 
   Briefcase, 
   ChevronRight,
-  MessageCircle
+  MessageCircle,
+  Info
 } from "lucide-react";
 import { useChat } from '@/lib/chat-context';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/lib/auth-context';
+import Link from 'next/link';
+import type { ContextDocument } from '@/lib/chat-context';
 
 export default function ChatPage() {
   const {
@@ -38,14 +42,23 @@ export default function ChatPage() {
   const { user } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [showDocuments, setShowDocuments] = useState(true);
+  const [selectedCount, setSelectedCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load user's documents when the component mounts
+  // Update selected count when contextDocuments changes
+  useEffect(() => {
+    const count = contextDocuments.filter(doc => doc.selected).length;
+    setSelectedCount(count);
+  }, [contextDocuments]);
+
+  // Monitor user state for page-specific logic
   useEffect(() => {
     if (user) {
-      loadUserDocuments();
+      console.log("ChatPage: User is present.");
+    } else {
+      console.log("ChatPage: No user.");
     }
-  }, [user, loadUserDocuments]);
+  }, [user]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -76,49 +89,59 @@ export default function ChatPage() {
   };
   
   const getSelectedDocumentsCount = () => {
-    return contextDocuments.filter(doc => doc.selected).length;
+    return selectedCount;
   };
 
   type DocumentItemProps = {
-    doc: {
-      id: string;
-      type: string;
-      title: string;
-      selected: boolean;
-    };
+    doc: ContextDocument;
     icon: React.ReactNode;
   };
 
-  const DocumentItem = ({ doc, icon }: DocumentItemProps) => (
-    <div 
-      key={doc.id}
-      onClick={() => toggleDocumentSelection(doc.id)}
-      className={`group flex items-center p-3 rounded-lg cursor-pointer transition-all ${
-        doc.selected 
-          ? 'bg-[#1A1A1A] border-l-2 border-primary' 
-          : 'hover:bg-[#1A1A1A] border-l-2 border-transparent'
-      }`}
-    >
-      <div className={`mr-3 p-2 rounded-md ${doc.selected ? 'bg-primary/10' : 'bg-[#242424]'}`}>
-        {icon}
-      </div>
-      <div className="flex-grow overflow-hidden">
-        <div className="text-sm font-medium truncate">{doc.title}</div>
-        <div className="text-xs text-muted-foreground">
-          {doc.type === 'resume' ? 'Resume' : 
-           doc.type === 'coverLetter' ? 'Cover Letter' : 
-           'Job Description'}
+  const DocumentItem = ({ doc, icon }: DocumentItemProps) => {
+    const handleClick = () => {
+      console.log('Selecting document:', doc.id, doc.title);
+      toggleDocumentSelection(doc.id);
+    };
+
+    return (
+      <div 
+        onClick={handleClick}
+        className={`group flex items-center p-3 rounded-lg cursor-pointer ${
+          doc.selected 
+            ? 'bg-[#1A1A1A] border-l-2 border-primary' 
+            : 'border-l-2 border-transparent hover:bg-[#1A1A1A]/50'
+        }`}
+        role="button"
+        aria-pressed={doc.selected}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleClick();
+          }
+        }}
+      >
+        <div className={`mr-3 p-2 rounded-md ${doc.selected ? 'bg-primary/10' : 'bg-[#242424]'}`}>
+          {icon}
+        </div>
+        <div className="flex-grow overflow-hidden">
+          <div className="text-sm font-medium truncate">{doc.title}</div>
+          <div className="text-xs text-muted-foreground">
+            {doc.type === 'resume' ? 'Resume' : 
+             doc.type === 'coverLetter' ? 'Cover Letter' : 
+             'Job Description'}
+          </div>
+        </div>
+        <div className={`ml-2 w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
+          doc.selected 
+            ? 'bg-primary' 
+            : 'bg-transparent border border-muted-foreground/30'
+        }`}>
+          {doc.selected && <Check className="h-3 w-3 text-primary-foreground" />}
         </div>
       </div>
-      <div className={`ml-2 w-5 h-5 rounded-full flex items-center justify-center transition-all ${
-        doc.selected 
-          ? 'bg-primary' 
-          : 'bg-transparent border border-muted-foreground/30 group-hover:border-muted-foreground/60'
-      }`}>
-        {doc.selected && <Check className="h-3 w-3 text-primary-foreground" />}
-      </div>
-    </div>
-  );
+    );
+  };
 
   type EmptyStateMessageProps = {
     type: string;
@@ -129,17 +152,39 @@ export default function ChatPage() {
   };
 
   const EmptyStateMessage = ({ type, icon, message, link, linkText }: EmptyStateMessageProps) => (
-    <div className="py-6 flex flex-col items-center justify-center text-center space-y-3">
-      <div className="bg-[#1A1A1A] h-16 w-16 rounded-full flex items-center justify-center">
+    <div className="p-6 text-center">
+      <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#232323] mb-4">
         {icon}
       </div>
-      <div className="space-y-2">
-        <p className="text-muted-foreground">{message}</p>
-        <Button variant="link" size="sm" className="text-primary" asChild>
-          <a href={link}>{linkText}</a>
-        </Button>
-      </div>
+      <p className="text-sm mb-4">{message}</p>
+      <Link 
+        href={link}
+        className="inline-flex h-9 items-center justify-center rounded-md bg-[#232323] px-3 text-sm font-medium text-foreground"
+      >
+        {linkText}
+      </Link>
     </div>
+  );
+
+  // Custom renderer for markdown content
+  const MarkdownMessage = ({ content }: { content: string }) => (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        // Style the elements
+        p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+        strong: ({ children }) => <span className="font-semibold text-primary">{children}</span>,
+        em: ({ children }) => <span className="italic text-primary/90">{children}</span>,
+        h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
+        h2: ({ children }) => <h2 className="text-base font-semibold mb-2">{children}</h2>,
+        h3: ({ children }) => <h3 className="text-sm font-semibold mb-2">{children}</h3>,
+        ul: ({ children }) => <ul className="list-disc list-inside mb-2">{children}</ul>,
+        ol: ({ children }) => <ol className="list-decimal list-inside mb-2">{children}</ol>,
+        li: ({ children }) => <li className="mb-1">{children}</li>,
+      }}
+    >
+      {content}
+    </ReactMarkdown>
   );
 
   return (
@@ -166,6 +211,13 @@ export default function ChatPage() {
               </div>
             </div>
             
+            <div className="p-3 bg-[#232323]/50 border-b border-border/40">
+              <p className="text-xs text-muted-foreground">
+                <Info className="h-3 w-3 inline-block mr-1" />
+                Click on a document to use it as context for the AI chat. Selected documents will help the AI provide more relevant responses.
+              </p>
+            </div>
+            
             <ScrollArea className="flex-grow">
               <div className="p-4 space-y-2">
                 {/* Document categories */}
@@ -184,10 +236,10 @@ export default function ChatPage() {
                   ) : (
                     <EmptyStateMessage 
                       type="resume"
-                      icon={<FileText className="h-8 w-8 text-muted-foreground/40" />}
+                      icon={<FileText className="h-6 w-6 text-muted-foreground" />}
                       message="No resumes found"
                       link="/analyze"
-                      linkText="Upload a resume"
+                      linkText="Upload Resume"
                     />
                   )}
                 </div>
@@ -209,10 +261,10 @@ export default function ChatPage() {
                   ) : (
                     <EmptyStateMessage 
                       type="coverLetter"
-                      icon={<FileIcon className="h-8 w-8 text-muted-foreground/40" />}
+                      icon={<FileIcon className="h-6 w-6 text-muted-foreground" />}
                       message="No cover letters found"
                       link="/cover-letter"
-                      linkText="Create a cover letter"
+                      linkText="Create Cover Letter"
                     />
                   )}
                 </div>
@@ -234,10 +286,10 @@ export default function ChatPage() {
                   ) : (
                     <EmptyStateMessage 
                       type="jobDescription"
-                      icon={<Briefcase className="h-8 w-8 text-muted-foreground/40" />}
+                      icon={<Briefcase className="h-6 w-6 text-muted-foreground" />}
                       message="No job descriptions found"
                       link="/job-descriptions"
-                      linkText="Add a job description"
+                      linkText="View Job Descriptions"
                     />
                   )}
                 </div>
@@ -249,7 +301,7 @@ export default function ChatPage() {
                 variant="outline" 
                 size="sm"
                 onClick={handleClearChat}
-                className="w-full bg-[#1A1A1A] hover:bg-[#232323] border-border/30"
+                className="w-full bg-[#1A1A1A] border-border/30"
               >
                 Clear Conversation
               </Button>
@@ -263,7 +315,7 @@ export default function ChatPage() {
               variant="ghost"
               size="icon"
               onClick={() => setShowDocuments(!showDocuments)}
-              className="absolute top-4 left-4 z-10 bg-background/5 hover:bg-background/20"
+              className="absolute top-4 left-4 z-10 bg-background/5"
             >
               <ChevronRight className={`h-4 w-4 transition-transform ${showDocuments ? 'rotate-180' : ''}`} />
             </Button>
@@ -308,7 +360,13 @@ export default function ChatPage() {
                             : 'bg-[#1A1A1A] text-foreground rounded-tl-none'
                         }`}
                       >
-                        <div className={message.sender === 'user' ? 'text-sm' : 'text-sm'}>{message.content}</div>
+                        <div className="text-sm">
+                          {message.sender === 'bot' ? (
+                            <MarkdownMessage content={message.content} />
+                          ) : (
+                            message.content
+                          )}
+                        </div>
                         <div className="mt-1 text-xs opacity-60 text-right">
                           {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </div>
@@ -356,7 +414,7 @@ export default function ChatPage() {
                 <Button 
                   type="submit" 
                   size="icon"
-                  className="bg-primary hover:bg-primary/90 rounded-full h-12 w-12 flex items-center justify-center" 
+                  className="bg-primary rounded-full h-12 w-12 flex items-center justify-center" 
                   disabled={isTyping || !user}
                 >
                   {isTyping ? (

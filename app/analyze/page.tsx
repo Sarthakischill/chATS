@@ -17,6 +17,7 @@ import { useAuth } from '@/lib/auth-context';
 import { FileUpload } from '@/components/ui/file-upload';
 import Link from "next/link";
 import { ResumeAnalysisModal } from '@/components/resume-analysis-modal';
+import { saveJobDescription } from '@/lib/supabase';
 
 export default function AnalyzePage() {
   const { user } = useAuth();
@@ -188,6 +189,21 @@ export default function AnalyzePage() {
       // Analyze the job description
       const jobDescriptionAnalysis = await analyzeJobDescription(jobDescription);
       
+      // Save job description separately
+      if (jobDescription && jobTitle) {
+        try {
+          await saveJobDescription(user.id, {
+            title: jobTitle,
+            company_name: '',
+            description: jobDescription
+          });
+          console.log('Job description saved successfully');
+        } catch (jobSaveError) {
+          console.error('Error saving job description:', jobSaveError);
+          // Continue with resume analysis even if job description save fails
+        }
+      }
+      
       // Call our resume service with job description analysis
       const { id, analysis } = await saveResumeToStorage(
         user.id, 
@@ -239,10 +255,23 @@ export default function AnalyzePage() {
     setError("");
 
     try {
-      // If we have a job description, analyze it
+      // If we have a job description, analyze it and save it separately
       let jobDescriptionAnalysis = null;
-      if (jobDescription) {
+      if (jobDescription && jobTitle) {
         jobDescriptionAnalysis = await analyzeJobDescription(jobDescription);
+        
+        // Save job description as a separate entity
+        try {
+          await saveJobDescription(user.id, {
+            title: jobTitle,
+            company_name: '',
+            description: jobDescription
+          });
+          console.log('Job description saved successfully');
+        } catch (jobSaveError) {
+          console.error('Error saving job description:', jobSaveError);
+          // Continue with resume save even if job description save fails
+        }
       }
 
       // Save the resume with analysis results and file

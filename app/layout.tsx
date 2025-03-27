@@ -2,10 +2,10 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Outfit } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
-import { ChatWidget } from '@/components/chat-widget';
 import { AuthProvider } from '@/lib/auth-context';
 import { Toaster } from '@/components/ui/toaster';
 import { ChatProvider } from '@/lib/chat-context';
+import { ClientChatWrapper } from '@/components/client-chat-wrapper';
 
 const outfit = Outfit({ subsets: ['latin'] });
 
@@ -26,7 +26,7 @@ export default function RootLayout({
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
             <ChatProvider>
               {children}
-              <ChatWidget />
+              <ClientChatWrapper />
               <Toaster />
             </ChatProvider>
           </ThemeProvider>
