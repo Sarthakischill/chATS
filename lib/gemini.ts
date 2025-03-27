@@ -743,7 +743,7 @@ export async function getLearningRecommendationsFromPDF(pdfFile: File, jobDescri
 /**
  * Get a response from the AI chatbot using the Gemini API
  */
-export async function getChatResponse(messages: { role: string; content: string }[], resumeText?: string) {
+export async function getChatResponse(messages: { role: string; content: string }[], contextText?: string) {
   try {
     // Prepare the conversation history
     const history = messages.slice(-6); // Include only last 6 messages for context
@@ -756,11 +756,11 @@ export async function getChatResponse(messages: { role: string; content: string 
     
     `;
     
-    if (resumeText) {
-      prompt += `USER'S RESUME:
-      ${resumeText}
+    if (contextText && contextText.trim()) {
+      prompt += `CONTEXT DOCUMENTS:
+      ${contextText}
       
-      Please consider this resume when providing advice.
+      Please consider this context when providing advice.
       `;
     }
     

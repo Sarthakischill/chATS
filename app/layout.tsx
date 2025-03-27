@@ -1,10 +1,11 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter, Outfit } from 'next/font/google';
+import { Outfit } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
-import { ResumeChat } from '@/components/resume-chatbot';
+import { ChatWidget } from '@/components/chat-widget';
 import { AuthProvider } from '@/lib/auth-context';
 import { Toaster } from '@/components/ui/toaster';
+import { ChatProvider } from '@/lib/chat-context';
 
 const outfit = Outfit({ subsets: ['latin'] });
 
@@ -23,9 +24,11 @@ export default function RootLayout({
       <body className={`${outfit.className} overflow-x-hidden`}>
         <AuthProvider>
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-            {children}
-            <ResumeChat />
-            <Toaster />
+            <ChatProvider>
+              {children}
+              <ChatWidget />
+              <Toaster />
+            </ChatProvider>
           </ThemeProvider>
         </AuthProvider>
       </body>
