@@ -64,6 +64,14 @@ export function Header() {
             Cover Letter
           </Link>
           <Link 
+            href="/learning" 
+            className={`text-sm font-medium hover:text-primary transition-colors ${
+              pathname === "/learning" ? "text-primary" : "text-foreground/80"
+            }`}
+          >
+            Learning Hub
+          </Link>
+          <Link 
             href="/chat" 
             className={`text-sm font-medium hover:text-primary transition-colors ${
               pathname === "/chat" ? "text-primary" : "text-foreground/80"
@@ -142,6 +150,9 @@ export function Header() {
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/cover-letter">Cover Letter</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/learning">Learning</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/chat">Chat</Link>

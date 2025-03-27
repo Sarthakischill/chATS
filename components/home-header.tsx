@@ -3,10 +3,13 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { 
-  FileIcon, 
-  MenuIcon 
+  FileIcon,
+  MenuIcon,
+  UserIcon,
+  LogOut
 } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { useAuth } from "@/lib/auth-context"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +19,12 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 export function HomeHeader() {
+  const { user, logout, isLoading } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container max-w-[1200px] mx-auto px-4 h-14 flex items-center">
@@ -45,6 +54,12 @@ export function HomeHeader() {
             Cover Letter
           </Link>
           <Link 
+            href="/learning" 
+            className="text-sm font-medium hover:text-primary transition-colors text-foreground/80"
+          >
+            Learning Hub
+          </Link>
+          <Link 
             href="/chat" 
             className="text-sm font-medium hover:text-primary transition-colors text-foreground/80"
           >
@@ -55,14 +70,55 @@ export function HomeHeader() {
         <div className="flex items-center ml-auto space-x-4">
           <ThemeToggle />
           
-          <div className="hidden md:flex gap-2">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/login">Login</Link>
-            </Button>
-            <Button size="sm" asChild>
-              <Link href="/signup">Sign Up</Link>
-            </Button>
-          </div>
+          {!isLoading && (
+            <>
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="rounded-full w-8 h-8 hover:bg-accent hover:text-accent-foreground">
+                      <UserIcon className="h-4 w-4" />
+                      <span className="sr-only">User Menu</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <div className="flex items-center justify-start gap-2 p-2">
+                      <div className="flex flex-col space-y-1 leading-none">
+                        {user.email && (
+                          <p className="font-medium">{user.email}</p>
+                        )}
+                      </div>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard">Dashboard</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile">Profile</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/settings">Settings</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={handleLogout}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" /> Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <div className="hidden md:flex gap-2">
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href="/login">Login</Link>
+                  </Button>
+                  <Button size="sm" asChild>
+                    <Link href="/signup">Sign Up</Link>
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild className="md:hidden">
@@ -82,15 +138,37 @@ export function HomeHeader() {
                 <Link href="/cover-letter">Cover Letter</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
+                <Link href="/learning">Learning Hub</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
                 <Link href="/chat">Chat</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/login">Login</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/signup">Sign Up</Link>
-              </DropdownMenuItem>
+              {user ? (
+                <>
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile">Profile</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings">Settings</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" /> Logout
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <>
+                  <DropdownMenuItem asChild>
+                    <Link href="/login">Login</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/signup">Sign Up</Link>
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

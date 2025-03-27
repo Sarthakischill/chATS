@@ -10,12 +10,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { FileUp, Download, Sparkles, FileText, Copy, Check, RotateCcw, Loader2, Upload, AlertTriangle } from "lucide-react";
+import { FileUp, Download, Sparkles, FileText, Copy, Check, RotateCcw, Loader2, Upload, AlertTriangle, AlertCircle } from "lucide-react";
 import { generateCoverLetter, generateCoverLetterFromPDF, extractTextFromPDF } from "@/lib/gemini";
 import mammoth from 'mammoth';
 import { FileUpload } from '@/components/ui/file-upload';
+import { useAuth } from "@/lib/auth-context";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import Link from "next/link";
+import { saveCoverLetter } from "@/lib/cover-letter-service";
+import { useRouter } from "next/navigation";
 
 export default function CoverLetterPage() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [resumeText, setResumeText] = useState("");
   const [jobDescription, setJobDescription] = useState("");
   const [companyName, setCompanyName] = useState("");
@@ -24,6 +31,7 @@ export default function CoverLetterPage() {
   const [includingSkills, setIncludingSkills] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isParsingFile, setIsParsingFile] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [coverLetter, setCoverLetter] = useState("");
   const [metadata, setMetadata] = useState<any>({});
@@ -42,6 +50,11 @@ export default function CoverLetterPage() {
   };
 
   const handleFileUpload = async (uploadedFile: File) => {
+    if (!user) {
+      setError("Please log in to upload your resume");
+      return;
+    }
+
     setResumeFile(uploadedFile);
     setError("");
     
@@ -59,7 +72,6 @@ export default function CoverLetterPage() {
       }
       
       setResumeText(text);
-      localStorage.setItem('userResume', text);
     } catch (err: any) {
       console.error("Error processing file:", err);
       setError(err.message || "Failed to process your resume. Please try a different file format.");
@@ -69,6 +81,11 @@ export default function CoverLetterPage() {
   };
 
   const handleGenerate = async () => {
+    if (!user) {
+      setError("Please log in to generate a cover letter");
+      return;
+    }
+    
     if ((!resumeText && !resumeFile) || !jobDescription || !companyName || !position) {
       setError("Please fill in all required fields");
       return;
@@ -100,12 +117,6 @@ export default function CoverLetterPage() {
         );
       }
       
-      // Store the resume text for future use in other components
-      if (resumeText) {
-        localStorage.setItem('userResume', resumeText);
-      }
-      localStorage.setItem('jobDescription', jobDescription);
-      
       setCoverLetter(result.coverLetter);
       setMetadata(result.metadata);
     } catch (err: any) {
@@ -113,6 +124,36 @@ export default function CoverLetterPage() {
       setError(err.message || "Failed to generate cover letter. Please try again or check your API key.");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!user) {
+      setError("Please log in to save your cover letter");
+      return;
+    }
+    
+    setIsSaving(true);
+    setError("");
+    
+    try {
+      const result = await saveCoverLetter(user.id, {
+        title: `Cover Letter for ${companyName} - ${position}`,
+        company: companyName,
+        position: position,
+        content: coverLetter,
+        resumeText: resumeText,
+        jobDescription: jobDescription,
+        metadata: metadata
+      });
+      
+      // Redirect to cover letters page
+      router.push("/cover-letters");
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Failed to save cover letter. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -139,6 +180,24 @@ export default function CoverLetterPage() {
               Create an ATS-optimized cover letter tailored to the job description
             </p>
           </div>
+
+          {error && error.includes("log in") && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>
+                {error}
+                <div className="mt-2">
+                  <Button variant="outline" size="sm" asChild className="mr-2">
+                    <Link href="/login">Log In</Link>
+                  </Button>
+                  <Button size="sm" asChild>
+                    <Link href="/signup">Sign Up</Link>
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
 
           {!coverLetter ? (
             <div className="grid gap-6 md:grid-cols-2">
@@ -199,7 +258,7 @@ export default function CoverLetterPage() {
                         acceptedTypes=".pdf,.docx,.doc,.txt"
                         isLoading={isParsingFile}
                         file={resumeFile}
-                        error={error}
+                        error="" 
                         placeholderText="Upload your resume"
                         description="PDF, DOCX, or TXT"
                       />
@@ -217,6 +276,15 @@ export default function CoverLetterPage() {
                         />
                       </div>
                     </div>
+                    
+                    {error && !error.includes("log in") && (
+                      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mt-4 text-sm">
+                        <div className="flex items-start">
+                          <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+                          <span>{error}</span>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -300,114 +368,101 @@ export default function CoverLetterPage() {
               </div>
             </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-3">
-              <div className="md:col-span-2">
-                <Card className="border border-border bg-card h-full">
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-xl font-semibold">Your Cover Letter</CardTitle>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={handleCopy} className="border-border">
-                          {copied ? (
-                            <>
-                              <Check className="mr-2 h-4 w-4" /> Copied
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="mr-2 h-4 w-4" /> Copy
-                            </>
-                          )}
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={handleReset} className="border-border">
-                          <RotateCcw className="mr-2 h-4 w-4" /> Reset
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="bg-muted rounded-md p-6 whitespace-pre-wrap font-serif">
-                      {coverLetter}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="border-t border-border pt-4">
-                    <Button className="w-full bg-primary">
-                      <Download className="mr-2 h-4 w-4" /> Download as PDF
+            <div className="space-y-6">
+              <Card className="border border-border bg-card">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-xl font-semibold">Generated Cover Letter</CardTitle>
+                    <CardDescription>
+                      Your ATS-optimized cover letter for {companyName}
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopy}
+                      className="text-xs flex items-center gap-1"
+                      disabled={copied}
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="h-3.5 w-3.5" />
+                          Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3.5 w-3.5" />
+                          Copy
+                        </>
+                      )}
                     </Button>
-                  </CardFooter>
-                </Card>
-              </div>
-
-              <div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleReset}
+                      className="text-xs flex items-center gap-1"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      Reset
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="whitespace-pre-wrap rounded-md border border-border bg-background p-4">
+                    {coverLetter}
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <Button 
+                    variant="outline" 
+                    className="flex items-center gap-1"
+                    onClick={handleReset}
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Create Another
+                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="flex items-center gap-1"
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="h-4 w-4" />
+                          Save Cover Letter
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardFooter>
+              </Card>
+              
+              {metadata && metadata.keywords && (
                 <Card className="border border-border bg-card">
                   <CardHeader>
-                    <CardTitle className="text-lg font-semibold">ATS Optimization Tips</CardTitle>
+                    <CardTitle className="text-lg font-semibold">Keywords & Match Analysis</CardTitle>
+                    <CardDescription>
+                      Keywords and phrases detected in the job description and included in your cover letter
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4 text-sm">
-                      <div>
-                        <h3 className="font-medium mb-1">Keywords Used</h3>
-                        <div className="flex flex-wrap gap-1">
-                          {metadata.keywords ? (
-                            metadata.keywords.map((keyword: string, index: number) => (
-                              <div key={index} className="bg-primary/10 text-primary text-xs rounded-full px-2 py-1">
-                                {keyword}
-                              </div>
-                            ))
-                          ) : (
-                            ["React", "Next.js", "web development", "responsive", "APIs"].map((keyword) => (
-                              <div key={keyword} className="bg-primary/10 text-primary text-xs rounded-full px-2 py-1">
-                                {keyword}
-                              </div>
-                            ))
-                          )}
+                    <div className="flex flex-wrap gap-2">
+                      {metadata.keywords.map((keyword: string, i: number) => (
+                        <div key={i} className="bg-primary/10 text-primary px-2 py-1 rounded-md text-sm">
+                          {keyword}
                         </div>
-                      </div>
-                      
-                      <div>
-                        <h3 className="font-medium mb-1">Format</h3>
-                        <p className="text-muted-foreground">Clean, professional format with clear paragraphs</p>
-                      </div>
-                      
-                      <div>
-                        <h3 className="font-medium mb-1">Length</h3>
-                        <p className="text-muted-foreground">
-                          {metadata.wordCount 
-                            ? `${metadata.wordCount} words (ideal for ATS)` 
-                            : "~350 words (ideal for ATS)"
-                          }
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <h3 className="font-medium mb-1">Personalization</h3>
-                        <p className="text-muted-foreground">Company name mentioned multiple times</p>
-                      </div>
-                      
-                      <div>
-                        <h3 className="font-medium mb-1">ATS Tips</h3>
-                        <ul className="list-disc ml-5 space-y-1">
-                          {metadata.tips ? (
-                            metadata.tips.map((tip: string, index: number) => (
-                              <li key={index} className="text-muted-foreground">{tip}</li>
-                            ))
-                          ) : (
-                            <li className="text-muted-foreground">Strong action verbs highlight your achievements</li>
-                          )}
-                        </ul>
-                      </div>
+                      ))}
                     </div>
                   </CardContent>
                 </Card>
-              </div>
-            </div>
-          )}
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mt-4 text-sm">
-              <div className="flex items-start">
-                <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-                <span>{error}</span>
-              </div>
+              )}
             </div>
           )}
         </div>

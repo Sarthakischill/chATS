@@ -2,24 +2,24 @@
 
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/header';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/lib/auth-context';
-import { getUserResumes } from '@/lib/supabase';
-import { deleteConversation } from '@/lib/conversation-service';
-import { FileText, Trash2, Upload, Eye, Loader2, Plus } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { format } from 'date-fns';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FileText, Upload, Plus, Loader2, AlertTriangle, Download, Eye } from 'lucide-react';
+import Link from 'next/link';
+import { useAuth } from '@/lib/auth-context';
+import { getUserResumes, deleteResume, downloadResume } from '@/lib/resume-service';
+import { ResumeAnalysisModal } from '@/components/resume-analysis-modal';
 
 export default function ResumesPage() {
   const { user } = useAuth();
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
   const [resumes, setResumes] = useState<any[]>([]);
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [selectedAnalysis, setSelectedAnalysis] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     async function loadResumes() {
@@ -27,11 +27,11 @@ export default function ResumesPage() {
       
       try {
         setIsLoading(true);
-        const data = await getUserResumes(user.id);
-        setResumes(data);
-      } catch (err) {
-        console.error('Failed to load resumes:', err);
-        setError('Failed to load your resumes. Please try again later.');
+        const userResumes = await getUserResumes(user.id);
+        setResumes(userResumes);
+      } catch (err: any) {
+        console.error('Error loading resumes:', err);
+        setError(err.message || 'Failed to load resumes');
       } finally {
         setIsLoading(false);
       }
@@ -40,20 +40,39 @@ export default function ResumesPage() {
     loadResumes();
   }, [user]);
 
-  async function handleDelete(id: string) {
+  const handleDelete = async (resumeId: string) => {
     if (!user) return;
     
     try {
-      setIsDeleting(id);
-      await deleteConversation(user.id, 'resume', id);
-      setResumes(resumes.filter(resume => resume.id !== id));
-    } catch (err) {
-      console.error('Failed to delete resume:', err);
-      setError('Failed to delete the resume. Please try again later.');
+      setDeletingId(resumeId);
+      await deleteResume(user.id, resumeId);
+      setResumes(resumes.filter(resume => resume.id !== resumeId));
+    } catch (err: any) {
+      console.error('Error deleting resume:', err);
+      setError(err.message || 'Failed to delete resume');
     } finally {
-      setIsDeleting(null);
+      setDeletingId(null);
     }
-  }
+  };
+
+  const handleDownload = async (resumeId: string) => {
+    if (!user) return;
+    
+    try {
+      setDownloadingId(resumeId);
+      await downloadResume(user.id, resumeId);
+    } catch (err: any) {
+      console.error('Error downloading resume:', err);
+      setError(err.message || 'Failed to download resume');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handleViewAnalysis = (resume: any) => {
+    setSelectedAnalysis(resume.analysis_results);
+    setIsModalOpen(true);
+  };
 
   if (!user) {
     return (
@@ -94,48 +113,72 @@ export default function ResumesPage() {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        
+
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin" />
           </div>
         ) : resumes.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {resumes.map(resume => (
+            {resumes.map((resume) => (
               <Card key={resume.id} className="flex flex-col">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center text-xl">
-                    <FileText className="mr-2 h-5 w-5 text-primary" />
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
                     {resume.title}
                   </CardTitle>
                   <CardDescription>
-                    Created: {format(new Date(resume.created_at), 'PPP')}
+                    {new Date(resume.created_at).toLocaleDateString()}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="pb-3 flex-grow">
-                  <p className="text-sm text-muted-foreground">
-                    Last updated: {format(new Date(resume.updated_at), 'PPP p')}
-                  </p>
+                <CardContent>
+                  <div className="text-sm text-muted-foreground">
+                    {resume.metadata?.originalFileName && (
+                      <p>Original file: {resume.metadata.originalFileName}</p>
+                    )}
+                    {resume.analysis_results && (
+                      <div className="mt-2">
+                        <p className="font-medium text-foreground">Analysis Score</p>
+                        <p>{resume.analysis_results.score || 'N/A'}%</p>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
-                <CardFooter className="flex justify-between pt-3">
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/resumes/${resume.id}`}>
-                      <Eye className="mr-2 h-4 w-4" />
-                      View
-                    </Link>
+                <CardFooter className="mt-auto pt-6 flex flex-wrap gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => handleViewAnalysis(resume)}
+                  >
+                    <Eye className="mr-2 h-4 w-4" />
+                    View Analysis
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => handleDownload(resume.id)}
+                    disabled={downloadingId === resume.id}
+                  >
+                    {downloadingId === resume.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Download className="mr-2 h-4 w-4" />
+                        Download
+                      </>
+                    )}
                   </Button>
                   <Button 
                     variant="destructive" 
-                    size="sm"
+                    className="flex-1"
                     onClick={() => handleDelete(resume.id)}
-                    disabled={isDeleting === resume.id}
+                    disabled={deletingId === resume.id}
                   >
-                    {isDeleting === resume.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    {deletingId === resume.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Trash2 className="h-4 w-4 mr-2" />
+                      'Delete'
                     )}
-                    Delete
                   </Button>
                 </CardFooter>
               </Card>
@@ -156,6 +199,15 @@ export default function ResumesPage() {
             </Button>
           </div>
         )}
+
+        <ResumeAnalysisModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedAnalysis(null);
+          }}
+          analysis={selectedAnalysis}
+        />
       </main>
     </div>
   );

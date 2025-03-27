@@ -8,13 +8,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { FileUp, Info, CheckCircle, AlertTriangle, X, FileText, Upload, Loader2, AlignJustify } from "lucide-react";
-import { analyzeResume, analyzeResumePDF, extractTextFromPDF } from "@/lib/gemini";
-import { analyzeResume as saveResumeToStorage, extractTextFromFile } from "@/lib/resume-service";
+import { FileUp, Info, CheckCircle, AlertTriangle, X, FileText, Upload, Loader2, AlignJustify, AlertCircle } from "lucide-react";
+import { analyzeResume, analyzeResumePDF, extractTextFromPDF, analyzeJobDescription } from "@/lib/gemini";
+import { analyzeResume as saveResumeToStorage, extractTextFromFile, saveResume } from "@/lib/resume-service";
 import mammoth from 'mammoth';
 import { useRouter } from "next/navigation";
 import { useAuth } from '@/lib/auth-context';
 import { FileUpload } from '@/components/ui/file-upload';
+import Link from "next/link";
+import { ResumeAnalysisModal } from '@/components/resume-analysis-modal';
 
 export default function AnalyzePage() {
   const { user } = useAuth();
@@ -30,6 +32,8 @@ export default function AnalyzePage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [fileName, setFileName] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
 
   // Check for API key on mount
   useEffect(() => {
@@ -52,6 +56,11 @@ export default function AnalyzePage() {
   };
 
   const handleFileUpload = async (uploadedFile: File) => {
+    if (!user) {
+      setError("Please log in to upload and analyze your resume");
+      return;
+    }
+    
     setFile(uploadedFile);
     setFileName(uploadedFile.name);
     setIsLoading(true);
@@ -59,11 +68,20 @@ export default function AnalyzePage() {
     
     try {
       // Extract text from the file
-      const text = await extractTextFromFile(uploadedFile);
+      let text = await extractTextFromFile(uploadedFile);
+      
+      // Check if text looks like PDF binary data
+      if (text.startsWith('%PDF-') || text.includes('endobj') || text.includes('/Type /Page')) {
+        console.warn('Detected raw PDF data, providing user instructions');
+        text = `[This PDF requires advanced extraction. For best results, please copy and paste the content manually.]`;
+        setError("We detected binary PDF data. For best results, please open the PDF in a reader, copy all text (Ctrl+A, Ctrl+C), and paste it below.");
+      }
+      
+      // Set the resume text
       setResumeText(text);
       
       // If we have job information, automatically analyze the resume
-      if (jobDescription && jobTitle) {
+      if (jobDescription && jobTitle && text && !text.includes('[This PDF requires advanced extraction')) {
         await analyzeResumeWithJobInfo(uploadedFile, text, jobTitle, jobDescription);
       }
     } catch (error) {
@@ -83,6 +101,12 @@ export default function AnalyzePage() {
   };
 
   const handleAnalyze = async () => {
+    // Check if user is logged in
+    if (!user) {
+      setError("Please log in to analyze your resume");
+      return;
+    }
+
     // Check for API key first
     if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
       setApiKeyError(true);
@@ -113,17 +137,16 @@ export default function AnalyzePage() {
       if (!analysisResults || typeof analysisResults !== 'object') {
         throw new Error("Invalid response format received from analysis");
       }
-      
-      // Store in localStorage for other components to use
-      if (resumeText) {
-        localStorage.setItem('userResume', resumeText);
-      }
-      
+
+      // If we have a job description, analyze it
       if (jobDescription) {
-        localStorage.setItem('jobDescription', jobDescription);
+        const jobDescriptionAnalysis = await analyzeJobDescription(jobDescription);
+        analysisResults.jobDescription = jobDescriptionAnalysis;
       }
       
+      // Store results in state and show modal
       setResults(analysisResults);
+      setShowAnalysisModal(true);
     } catch (err: any) {
       console.error('Analysis error:', err);
       if (err.message?.includes("API key") || err.message?.includes("403")) {
@@ -162,8 +185,19 @@ export default function AnalyzePage() {
       // Add the job info to the analysis context
       const analysisContext = `Job Title: ${jobTitle}\n\nJob Description: ${jobDescription}`;
       
-      // Call our resume service
-      const { id, analysis } = await saveResumeToStorage(user.id, resumeFile, resumeText + "\n\n" + analysisContext);
+      // Analyze the job description
+      const jobDescriptionAnalysis = await analyzeJobDescription(jobDescription);
+      
+      // Call our resume service with job description analysis
+      const { id, analysis } = await saveResumeToStorage(
+        user.id, 
+        resumeFile, 
+        resumeText + "\n\n" + analysisContext,
+        jobDescription
+      );
+      
+      // Add job description analysis to results
+      analysis.jobDescription = jobDescriptionAnalysis;
       
       // Set the results
       setResults(analysis);
@@ -175,6 +209,65 @@ export default function AnalyzePage() {
       setError(err.message || "Failed to analyze your resume. Please try again.");
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!user) {
+      setError("Please log in to save your resume");
+      return;
+    }
+
+    if (!file) {
+      setError("No resume file to save");
+      return;
+    }
+
+    // Make sure we have resume text
+    if (!resumeText || resumeText.trim().length === 0) {
+      setError("No resume text content available. Please try a different file or paste the content manually.");
+      return;
+    }
+
+    // Check if the resume text contains PDF binary markers 
+    if (resumeText.startsWith('%PDF-') || resumeText.includes('endobj') || resumeText.includes('/Type /Page')) {
+      setError("The file appears to contain raw PDF data. Please upload a text-based PDF or paste the content manually.");
+      return;
+    }
+
+    setIsSaving(true);
+    setError("");
+
+    try {
+      // If we have a job description, analyze it
+      let jobDescriptionAnalysis = null;
+      if (jobDescription) {
+        jobDescriptionAnalysis = await analyzeJobDescription(jobDescription);
+      }
+
+      // Save the resume with analysis results and file
+      const savedResume = await saveResume(user.id, {
+        title: file.name.split('.')[0],
+        content: resumeText,
+        file: file,  // Include the actual file
+        metadata: {
+          originalFileName: file.name,
+          fileType: file.type,
+          uploadDate: new Date().toISOString()
+        },
+        analysis_results: {
+          ...results,
+          jobDescription: jobDescriptionAnalysis
+        }
+      });
+
+      // Redirect to resumes page
+      router.replace('/resumes');
+    } catch (err: any) {
+      console.error('Error saving resume:', err);
+      setError(err.message || "Failed to save resume. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -205,6 +298,26 @@ export default function AnalyzePage() {
                 </div>
               </div>
             </div>
+          )}
+
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>
+                {error}
+                {error.includes("log in") && (
+                  <div className="mt-2">
+                    <Button variant="outline" size="sm" asChild className="mr-2">
+                      <Link href="/login">Log In</Link>
+                    </Button>
+                    <Button size="sm" asChild>
+                      <Link href="/signup">Sign Up</Link>
+                    </Button>
+                  </div>
+                )}
+              </AlertDescription>
+            </Alert>
           )}
 
           {!results ? (
@@ -382,9 +495,31 @@ export default function AnalyzePage() {
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold">Analysis Results</h2>
-                <Button variant="outline" onClick={handleReset} className="border-border">
-                  Analyze Another Resume
-                </Button>
+                <CardFooter className="flex justify-between gap-4">
+                  <Button variant="outline" asChild className="flex-1">
+                    <Link href="/analyze">
+                      <FileUp className="mr-2 h-4 w-4" />
+                      Analyze Another Resume
+                    </Link>
+                  </Button>
+                  <Button 
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="flex-1"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="mr-2 h-4 w-4" />
+                        Save Resume
+                      </>
+                    )}
+                  </Button>
+                </CardFooter>
               </div>
 
               <Card className="border border-border bg-card">
@@ -510,6 +645,13 @@ export default function AnalyzePage() {
           )}
         </div>
       </main>
+
+      {/* Add the analysis modal */}
+      <ResumeAnalysisModal
+        isOpen={showAnalysisModal}
+        onClose={() => setShowAnalysisModal(false)}
+        analysis={results}
+      />
     </div>
   );
 } 
