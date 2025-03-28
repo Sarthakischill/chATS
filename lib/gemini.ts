@@ -12,7 +12,7 @@ if (!apiKey) {
 const genAI = new GoogleGenerativeAI(apiKey || "");
 
 // Get the Gemini model (use Gemini Flash 2.0)
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 // Configure safety settings
 const safetySettings = [
@@ -60,20 +60,22 @@ export async function generateWithGemini(prompt: string): Promise<string> {
 export async function analyzeResume(resumeText: string, jobDescription?: string) {
   try {
     // Use the initialized flash model
-    const prompt = `Please analyze this resume${jobDescription ? ' for the following job description' : ''}:
+    const prompt = `Please analyze this resume accurately${jobDescription ? ' for the following job description' : ''}:
     
     ${jobDescription ? `Job Description:\n${jobDescription}\n\nResume:\n` : ''}${resumeText}
     
     Provide a structured analysis with the following components:
-    1. Overall ATS compatibility score (0-100)
-    2. Section scores for different parts (experience, education, skills, etc.)
-    3. Keyword match percentage
-    4. Missing important keywords
-    5. Strengths of the resume
-    6. Areas for improvement
+    1. A concise summary of the resume's key points and overall assessment
+    2. Overall ATS compatibility score (0-100)
+    3. Section scores for different parts (experience, education, skills, etc.)
+    4. Keyword match percentage
+    5. Missing important keywords
+    6. Strengths of the resume
+    7. Areas for improvement
     
     Format the response ONLY as a JSON object with the following structure, without any text before or after:
     {
+      "summary": string,
       "score": number,
       "sectionScores": { "section": number },
       "keywordMatches": number,
@@ -109,6 +111,7 @@ export async function analyzeResume(resumeText: string, jobDescription?: string)
       
       // If all else fails, return a default structure with the raw text as a note
       return {
+        summary: "Unable to generate a detailed analysis. Please try again.",
         score: 70,
         sectionScores: { "overall": 70 },
         keywordMatches: 60,

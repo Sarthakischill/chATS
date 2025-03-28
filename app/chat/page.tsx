@@ -108,8 +108,8 @@ export default function ChatPage() {
         onClick={handleClick}
         className={`group flex items-center p-3 rounded-lg cursor-pointer ${
           doc.selected 
-            ? 'bg-[#1A1A1A] border-l-2 border-primary' 
-            : 'border-l-2 border-transparent hover:bg-[#1A1A1A]/50'
+            ? 'bg-muted border-l-2 border-primary' 
+            : 'border-l-2 border-transparent hover:bg-accent/20'
         }`}
         role="button"
         aria-pressed={doc.selected}
@@ -121,7 +121,7 @@ export default function ChatPage() {
           }
         }}
       >
-        <div className={`mr-3 p-2 rounded-md ${doc.selected ? 'bg-primary/10' : 'bg-[#242424]'}`}>
+        <div className={`mr-3 p-2 rounded-md ${doc.selected ? 'bg-primary/10' : 'bg-card'}`}>
           {icon}
         </div>
         <div className="flex-grow overflow-hidden">
@@ -132,7 +132,7 @@ export default function ChatPage() {
              'Job Description'}
           </div>
         </div>
-        <div className={`ml-2 w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
+        <div className={`ml-2 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
           doc.selected 
             ? 'bg-primary' 
             : 'bg-transparent border border-muted-foreground/30'
@@ -153,13 +153,13 @@ export default function ChatPage() {
 
   const EmptyStateMessage = ({ type, icon, message, link, linkText }: EmptyStateMessageProps) => (
     <div className="p-6 text-center">
-      <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#232323] mb-4">
+      <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-card mb-4">
         {icon}
       </div>
       <p className="text-sm mb-4">{message}</p>
       <Link 
         href={link}
-        className="inline-flex h-9 items-center justify-center rounded-md bg-[#232323] px-3 text-sm font-medium text-foreground"
+        className="inline-flex h-9 items-center justify-center rounded-md bg-card px-3 text-sm font-medium text-foreground"
       >
         {linkText}
       </Link>
@@ -168,23 +168,35 @@ export default function ChatPage() {
 
   // Custom renderer for markdown content
   const MarkdownMessage = ({ content }: { content: string }) => (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
-      components={{
-        // Style the elements
-        p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-        strong: ({ children }) => <span className="font-semibold text-primary">{children}</span>,
-        em: ({ children }) => <span className="italic text-primary/90">{children}</span>,
-        h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
-        h2: ({ children }) => <h2 className="text-base font-semibold mb-2">{children}</h2>,
-        h3: ({ children }) => <h3 className="text-sm font-semibold mb-2">{children}</h3>,
-        ul: ({ children }) => <ul className="list-disc list-inside mb-2">{children}</ul>,
-        ol: ({ children }) => <ol className="list-decimal list-inside mb-2">{children}</ol>,
-        li: ({ children }) => <li className="mb-1">{children}</li>,
-      }}
-    >
-      {content}
-    </ReactMarkdown>
+    <div className="prose prose-sm dark:prose-invert prose-headings:text-foreground prose-p:text-muted-foreground prose-strong:text-foreground prose-em:text-foreground">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          // Style the elements
+          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+          strong: ({ children }) => <span className="font-semibold text-foreground">{children}</span>,
+          em: ({ children }) => <span className="italic text-foreground">{children}</span>,
+          h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
+          h2: ({ children }) => <h2 className="text-base font-semibold mb-2 text-foreground">{children}</h2>,
+          h3: ({ children }) => <h3 className="text-sm font-semibold mb-2 text-foreground">{children}</h3>,
+          ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+          ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+          li: ({ children }) => (
+            <li className="mb-1">
+              <span className="ml-1">{children}</span>
+            </li>
+          ),
+          // Handle code blocks and inline code
+          code: ({ children }) => (
+            <code className="bg-muted px-1.5 py-0.5 rounded-md text-sm font-mono">{children}</code>
+          ),
+          // Ensure proper spacing for sections
+          hr: () => <hr className="my-4 border-border" />,
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
   );
 
   return (
@@ -192,9 +204,9 @@ export default function ChatPage() {
       <Header />
       
       <main className="flex flex-1 container max-w-[1400px] mx-auto px-4 py-6">
-        <div className="flex h-[calc(100vh-130px)] w-full rounded-xl overflow-hidden bg-[#141414] border border-border/50 shadow-xl">
+        <div className="flex h-[calc(100vh-130px)] w-full rounded-xl overflow-hidden bg-card border border-border/50 shadow-xl">
           {/* Left sidebar for document selection */}
-          <div className={`bg-[#171717] ${showDocuments ? 'w-80' : 'w-0'} transition-all duration-300 flex flex-col border-r border-border/40`}>
+          <div className={`bg-muted ${showDocuments ? 'w-80' : 'w-0'} transition-all duration-300 flex flex-col border-r border-border/40`}>
             <div className="p-4 border-b border-border/40 flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold flex items-center">
@@ -206,12 +218,12 @@ export default function ChatPage() {
                 </p>
               </div>
               
-              <div className="bg-[#232323] px-2 py-1 rounded-md text-xs font-medium">
+              <div className="bg-card px-2 py-1 rounded-md text-xs font-medium">
                 {getSelectedDocumentsCount()} selected
               </div>
             </div>
             
-            <div className="p-3 bg-[#232323]/50 border-b border-border/40">
+            <div className="p-3 bg-accent/20 border-b border-border/40">
               <p className="text-xs text-muted-foreground">
                 <Info className="h-3 w-3 inline-block mr-1" />
                 Click on a document to use it as context for the AI chat. Selected documents will help the AI provide more relevant responses.
@@ -301,7 +313,7 @@ export default function ChatPage() {
                 variant="outline" 
                 size="sm"
                 onClick={handleClearChat}
-                className="w-full bg-[#1A1A1A] border-border/30"
+                className="w-full bg-card border-border/30"
               >
                 Clear Conversation
               </Button>
@@ -357,10 +369,10 @@ export default function ChatPage() {
                         className={`rounded-2xl px-4 py-3 max-w-[85%] shadow-sm ${
                           message.sender === 'user'
                             ? 'bg-primary text-primary-foreground rounded-tr-none'
-                            : 'bg-[#1A1A1A] text-foreground rounded-tl-none'
+                            : 'bg-muted rounded-tl-none'
                         }`}
                       >
-                        <div className="text-sm">
+                        <div className={`text-sm ${message.sender === 'bot' ? 'text-foreground' : ''}`}>
                           {message.sender === 'bot' ? (
                             <MarkdownMessage content={message.content} />
                           ) : (
@@ -387,7 +399,7 @@ export default function ChatPage() {
                           <Bot className="h-5 w-5 text-primary" />
                         </AvatarFallback>
                       </Avatar>
-                      <div className="rounded-2xl rounded-tl-none px-4 py-3 bg-[#1A1A1A]">
+                      <div className="rounded-2xl rounded-tl-none px-4 py-3 bg-muted">
                         <div className="flex items-center gap-1.5">
                           <div className="w-2 h-2 rounded-full bg-muted-foreground/60 animate-pulse"></div>
                           <div className="w-2 h-2 rounded-full bg-muted-foreground/60 animate-pulse delay-150"></div>
@@ -408,7 +420,7 @@ export default function ChatPage() {
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Type your message here..."
-                  className="flex-grow py-6 px-4 bg-[#1A1A1A] border-none focus-visible:ring-1 focus-visible:ring-primary/30 text-sm rounded-full"
+                  className="flex-grow py-6 px-4 bg-card border-none focus-visible:ring-1 focus-visible:ring-primary/30 text-sm rounded-full"
                   disabled={isTyping || !user}
                 />
                 <Button 

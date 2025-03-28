@@ -101,7 +101,7 @@ export default function CoverLetterPage() {
         await saveJobDescription(user.id, {
           title: `${position} at ${companyName}`,
           company_name: companyName,
-          description: jobDescription
+          content: jobDescription
         });
         console.log('Job description saved successfully');
       } catch (jobSaveError) {

@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, FileText, Loader2 } from "lucide-react";
+import { Upload, FileText, Loader2, X } from "lucide-react";
 
 interface FileUploadProps {
   id: string;
   onFileUpload: (file: File) => Promise<void>;
+  onRemove?: () => void;
   acceptedTypes?: string;
   isLoading?: boolean;
   file: File | null;
@@ -18,6 +19,7 @@ interface FileUploadProps {
 export function FileUpload({
   id,
   onFileUpload,
+  onRemove,
   acceptedTypes = ".pdf,.txt,.docx,.doc",
   isLoading = false,
   file,
@@ -34,10 +36,20 @@ export function FileUpload({
 
   return (
     <div 
-      className={`border-2 border-dashed rounded-lg p-6 text-center ${
+      className={`relative border-2 border-dashed rounded-lg p-6 text-center ${
         error ? 'border-red-500' : 'border-border'
       } hover:border-primary transition-colors ${className}`}
     >
+      {file && onRemove && (
+        <button
+          onClick={onRemove}
+          className="absolute top-2 right-2 p-1.5 rounded-full hover:bg-muted transition-colors"
+          type="button"
+          aria-label="Remove file"
+        >
+          <X className="h-5 w-5 text-muted-foreground hover:text-foreground" />
+        </button>
+      )}
       <input
         type="file"
         id={id}

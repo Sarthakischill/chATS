@@ -16,8 +16,40 @@ import { useRouter } from "next/navigation";
 import { useAuth } from '@/lib/auth-context';
 import { FileUpload } from '@/components/ui/file-upload';
 import Link from "next/link";
-import { ResumeAnalysisModal } from '@/components/resume-analysis-modal';
 import { saveJobDescription } from '@/lib/supabase';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
+// Custom renderer for markdown content
+const MarkdownMessage = ({ content }: { content: string }) => (
+  <div className="prose prose-sm dark:prose-invert prose-headings:text-foreground prose-p:text-muted-foreground prose-strong:text-foreground prose-em:text-foreground">
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        // Style the elements
+        p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+        strong: ({ children }) => <span className="font-semibold text-foreground">{children}</span>,
+        em: ({ children }) => <span className="italic text-foreground">{children}</span>,
+        h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
+        h2: ({ children }) => <h2 className="text-base font-semibold mb-2 text-foreground">{children}</h2>,
+        h3: ({ children }) => <h3 className="text-sm font-semibold mb-2 text-foreground">{children}</h3>,
+        ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+        ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+        li: ({ children }) => (
+          <li className="mb-1">
+            <span className="ml-1">{children}</span>
+          </li>
+        ),
+        code: ({ children }) => (
+          <code className="bg-muted px-1.5 py-0.5 rounded-md text-sm font-mono">{children}</code>
+        ),
+        hr: () => <hr className="my-4 border-border" />,
+      }}
+    >
+      {content}
+    </ReactMarkdown>
+  </div>
+);
 
 export default function AnalyzePage() {
   const { user } = useAuth();
@@ -34,7 +66,6 @@ export default function AnalyzePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [fileName, setFileName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
 
   // Check for API key on mount
   useEffect(() => {
@@ -145,9 +176,8 @@ export default function AnalyzePage() {
         analysisResults.jobDescription = jobDescriptionAnalysis;
       }
       
-      // Store results in state and show modal
+      // Store results in state
       setResults(analysisResults);
-      setShowAnalysisModal(true);
     } catch (err: any) {
       console.error('Analysis error:', err);
       if (err.message?.includes("API key") || err.message?.includes("403")) {
@@ -195,7 +225,7 @@ export default function AnalyzePage() {
           await saveJobDescription(user.id, {
             title: jobTitle,
             company_name: '',
-            description: jobDescription
+            content: jobDescription
           });
           console.log('Job description saved successfully');
         } catch (jobSaveError) {
@@ -265,7 +295,7 @@ export default function AnalyzePage() {
           await saveJobDescription(user.id, {
             title: jobTitle,
             company_name: '',
-            description: jobDescription
+            content: jobDescription
           });
           console.log('Job description saved successfully');
         } catch (jobSaveError) {
@@ -298,6 +328,13 @@ export default function AnalyzePage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleRemoveFile = () => {
+    setFile(null);
+    setFileName("");
+    setResumeText("");
+    setError("");
   };
 
   return (
@@ -363,6 +400,7 @@ export default function AnalyzePage() {
                     <FileUpload
                       id="resume-upload"
                       onFileUpload={handleFileUpload}
+                      onRemove={handleRemoveFile}
                       acceptedTypes=".pdf,.txt,.docx,.doc"
                       isLoading={isLoading}
                       file={file}
@@ -553,6 +591,22 @@ export default function AnalyzePage() {
 
               <Card className="border border-border bg-card">
                 <CardHeader>
+                  <CardTitle className="text-xl font-semibold">Analysis Summary</CardTitle>
+                  <CardDescription>
+                    {!results.summary && "No analysis summary is available"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {results.summary ? (
+                    <MarkdownMessage content={results.summary} />
+                  ) : (
+                    <p className="text-muted-foreground">Please wait while we generate your analysis summary...</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="border border-border bg-card">
+                <CardHeader>
                   <CardTitle className="text-xl font-semibold">ATS Compatibility Score</CardTitle>
                   <CardDescription>
                     How well your resume performs against ATS systems
@@ -674,13 +728,6 @@ export default function AnalyzePage() {
           )}
         </div>
       </main>
-
-      {/* Add the analysis modal */}
-      <ResumeAnalysisModal
-        isOpen={showAnalysisModal}
-        onClose={() => setShowAnalysisModal(false)}
-        analysis={results}
-      />
     </div>
   );
 } 

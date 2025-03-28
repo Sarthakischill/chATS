@@ -250,14 +250,20 @@ export async function getJobDescriptionById(jobId: string) {
 
 export async function saveJobDescription(userId: string, jobData: any) {
   try {
+    // Normalize the data to ensure consistent field names
+    const normalizedJobData = {
+      title: jobData.title,
+      company_name: jobData.company_name || '',
+      content: jobData.content || jobData.description, // Handle both field names
+      user_id: userId,
+      updated_at: new Date().toISOString()
+    };
+
     // Check if we're updating an existing job description or creating a new one
     if (jobData.id) {
       const { data, error } = await supabase
         .from('job_descriptions')
-        .update({
-          ...jobData,
-          updated_at: new Date().toISOString()
-        })
+        .update(normalizedJobData)
         .eq('id', jobData.id)
         .eq('user_id', userId) // Ensure the user owns this job description
         .select();
@@ -267,14 +273,10 @@ export async function saveJobDescription(userId: string, jobData: any) {
     } else {
       const { data, error } = await supabase
         .from('job_descriptions')
-        .insert([
-          {
-            ...jobData,
-            user_id: userId,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ])
+        .insert([{
+          ...normalizedJobData,
+          created_at: new Date().toISOString()
+        }])
         .select();
         
       if (error) throw error;

@@ -90,9 +90,9 @@ export function FloatingChat() {
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
-      <div className="w-[400px] h-[600px] flex flex-col rounded-xl overflow-hidden bg-[#141414] border border-border/50 shadow-xl">
+      <div className="w-[400px] h-[600px] flex flex-col rounded-xl overflow-hidden bg-card border border-border/50 shadow-xl">
         {/* Chat header */}
-        <div className="px-4 py-3 border-b border-border/40 flex items-center justify-between bg-[#171717]">
+        <div className="px-4 py-3 border-b border-border/40 flex items-center justify-between bg-muted">
           <div className="flex items-center gap-2">
             <Avatar className="h-8 w-8">
               <AvatarFallback className="bg-primary/10">
@@ -127,7 +127,7 @@ export function FloatingChat() {
         </div>
         
         {/* Chat messages */}
-        <div className="flex-grow overflow-hidden relative">
+        <div className="flex-grow overflow-hidden relative bg-background">
           {error && (
             <Alert variant="destructive" className="m-4">
               <AlertDescription>{error}</AlertDescription>
@@ -153,7 +153,7 @@ export function FloatingChat() {
                     className={`rounded-2xl px-3 py-2 max-w-[85%] shadow-sm ${
                       message.sender === 'user'
                         ? 'bg-primary text-primary-foreground rounded-tr-none'
-                        : 'bg-[#1A1A1A] text-foreground rounded-tl-none'
+                        : 'bg-muted text-muted-foreground rounded-tl-none'
                     }`}
                   >
                     <div className="text-sm">{message.content}</div>
@@ -177,7 +177,7 @@ export function FloatingChat() {
                       <Bot className="h-4 w-4 text-primary" />
                     </AvatarFallback>
                   </Avatar>
-                  <div className="rounded-2xl rounded-tl-none px-3 py-2 bg-[#1A1A1A]">
+                  <div className="rounded-2xl rounded-tl-none px-3 py-2 bg-muted">
                     <div className="flex items-center gap-1.5">
                       <div className="w-2 h-2 rounded-full bg-muted-foreground/60 animate-pulse"></div>
                       <div className="w-2 h-2 rounded-full bg-muted-foreground/60 animate-pulse delay-150"></div>
@@ -193,13 +193,13 @@ export function FloatingChat() {
         </div>
         
         {/* Chat input */}
-        <div className="px-4 py-3 border-t border-border/40 bg-[#171717]">
+        <div className="px-4 py-3 border-t border-border/40 bg-muted">
           <form onSubmit={handleMessageSubmit} className="flex items-center gap-2">
             <Input
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Type a message..."
-              className="flex-grow py-2 px-3 bg-[#1A1A1A] border-none focus-visible:ring-1 focus-visible:ring-primary/30 text-sm rounded-full"
+              className="flex-grow py-2 px-3 bg-card border-none focus-visible:ring-1 focus-visible:ring-primary/30 text-sm rounded-full"
               disabled={isTyping || !user}
             />
             <Button 
