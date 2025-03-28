@@ -16,9 +16,10 @@ import { useRouter } from "next/navigation";
 import { useAuth } from '@/lib/auth-context';
 import { FileUpload } from '@/components/ui/file-upload';
 import Link from "next/link";
-import { saveJobDescription } from '@/lib/supabase';
+import { saveJobDescription, getUserJobDescriptions } from '@/lib/supabase';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Input } from "@/components/ui/input";
 
 // Custom renderer for markdown content
 const MarkdownMessage = ({ content }: { content: string }) => (
@@ -54,9 +55,10 @@ const MarkdownMessage = ({ content }: { content: string }) => (
 export default function AnalyzePage() {
   const { user } = useAuth();
   const [file, setFile] = useState<File | null>(null);
+  const [fileName, setFileName] = useState("");
   const [resumeText, setResumeText] = useState("");
-  const [jobTitle, setJobTitle] = useState("");
   const [jobDescription, setJobDescription] = useState("");
+  const [jobTitle, setJobTitle] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isParsingFile, setIsParsingFile] = useState(false);
   const [results, setResults] = useState<any | null>(null);
@@ -64,7 +66,6 @@ export default function AnalyzePage() {
   const [apiKeyError, setApiKeyError] = useState(false);
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [fileName, setFileName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   // Check for API key on mount
@@ -133,59 +134,101 @@ export default function AnalyzePage() {
   };
 
   const handleAnalyze = async () => {
-    // Check if user is logged in
     if (!user) {
       setError("Please log in to analyze your resume");
       return;
     }
 
-    // Check for API key first
-    if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
-      setApiKeyError(true);
-      setError("Gemini API key is missing. Please add your NEXT_PUBLIC_GEMINI_API_KEY to the .env file.");
-      return;
-    }
-
     if (!resumeText && !file) {
-      setError("Please upload a resume file or provide resume text");
+      setError("No resume to analyze. Please upload a file or enter resume text.");
       return;
     }
 
     setIsAnalyzing(true);
     setError("");
-    setApiKeyError(false);
-    
-    try {
-      let analysisResults;
-      
-      // If we have a PDF file, analyze it directly with Gemini
-      if (file && file.type === "application/pdf") {
-        analysisResults = await analyzeResumePDF(file, jobDescription);
-      } else {
-        // Otherwise, use the text-based analysis
-        analysisResults = await analyzeResume(resumeText, jobDescription);
-      }
-      
-      if (!analysisResults || typeof analysisResults !== 'object') {
-        throw new Error("Invalid response format received from analysis");
-      }
 
-      // If we have a job description, analyze it
-      if (jobDescription) {
-        const jobDescriptionAnalysis = await analyzeJobDescription(jobDescription);
-        analysisResults.jobDescription = jobDescriptionAnalysis;
-      }
+    try {
+      const id = crypto.randomUUID();
+      const { scores, summary, keywords, formattingIssues, skillsAnalysis, improvementSuggestions } = 
+        await analyzeResume(resumeText, jobDescription);
       
       // Store results in state
-      setResults(analysisResults);
-    } catch (err: any) {
-      console.error('Analysis error:', err);
-      if (err.message?.includes("API key") || err.message?.includes("403")) {
-        setApiKeyError(true);
+      setResults({
+        id,
+        scores,
+        summary,
+        keywords,
+        formattingIssues,
+        skillsAnalysis,
+        improvementSuggestions,
+        timestamp: new Date().toISOString()
+      });
+      
+      // If job description is provided, also analyze job fit
+      if (jobDescription && jobDescription.trim()) {
+        try {
+          console.log('Analyzing job fit with description...');
+          await saveJobDescriptionAndAnalyzeJobFit(jobDescription);
+        } catch (jobError) {
+          console.error("Error handling job description:", jobError);
+          // Continue with resume analysis even if job description analysis fails
+        }
       }
-      setError(err.message || "Failed to analyze resume. Please try again or check your API key.");
+      
+      // After successful analysis, redirect to the results page
+      router.push(`/resumes/${id}`);
+    } catch (err: any) {
+      console.error("Error analyzing resume:", err);
+      setError(err.message || "Failed to analyze your resume. Please try again.");
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  // Separated job description handling logic
+  const saveJobDescriptionAndAnalyzeJobFit = async (jobDescText: string) => {
+    if (!user) return;
+    
+    try {
+      // 1. Save job description separately
+      console.log('Preparing to save job description...');
+      
+      // 2. Determine job title
+      let jobTitleToUse = jobTitle && jobTitle.trim() 
+        ? jobTitle.trim() 
+        : "Untitled Job Description";
+      
+      if (jobTitleToUse === "Untitled Job Description" && jobDescText.trim()) {
+        const firstLine = jobDescText.split('\n')[0].trim();
+        if (firstLine.length > 0) {
+          jobTitleToUse = firstLine.length > 50 
+            ? firstLine.substring(0, 50) + "..." 
+            : firstLine;
+          
+          if (jobTitleToUse.length < 10) {
+            jobTitleToUse = "Job Description: " + jobTitleToUse;
+          }
+        }
+      }
+      
+      // 3. Save job description
+      console.log('Saving job description with title:', jobTitleToUse);
+      const saveResult = await saveJobDescription(user.id, {
+        title: jobTitleToUse,
+        company_name: '',
+        content: jobDescText
+      });
+      
+      console.log('Job description save result:', saveResult);
+      
+      // 4. Verify job descriptions were saved
+      const jdCount = await checkJobDescriptionsSaved(user.id);
+      console.log(`User has ${jdCount} job descriptions after save`);
+      
+      return await analyzeJobDescription(jobDescText);
+    } catch (error) {
+      console.error('Error in saveJobDescriptionAndAnalyzeJobFit:', error);
+      throw error;
     }
   };
 
@@ -216,18 +259,58 @@ export default function AnalyzePage() {
       // Add the job info to the analysis context
       const analysisContext = `Job Title: ${jobTitle}\n\nJob Description: ${jobDescription}`;
       
-      // Analyze the job description
-      const jobDescriptionAnalysis = await analyzeJobDescription(jobDescription);
+      // Analyze the job description and save it
+      let jobDescriptionAnalysisResult = null;
       
-      // Save job description separately
-      if (jobDescription && jobTitle) {
+      if (jobDescription) {
+        console.log('Attempting to analyze and save job description...');
         try {
-          await saveJobDescription(user.id, {
-            title: jobTitle,
+          // First analyze the job description
+          jobDescriptionAnalysisResult = await analyzeJobDescription(jobDescription);
+          
+          let title = "Untitled Job Description";
+          
+          // If job title is provided, use it
+          if (jobTitle && jobTitle.trim()) {
+            title = jobTitle;
+          } 
+          // Otherwise, try to extract a title from the job description
+          else if (jobDescription.trim()) {
+            // Get the first line or first 50 characters, whichever is shorter
+            const firstLine = jobDescription.split('\n')[0].trim();
+            title = firstLine.length > 50 ? firstLine.substring(0, 50) + "..." : firstLine;
+            
+            // If first line is too short, use "Job Description" prefix
+            if (title.length < 10) {
+              title = "Job Description: " + title;
+            }
+          }
+          
+          console.log('Saving job description with title:', title);
+          console.log('Job description content length:', jobDescription.length);
+          console.log('User ID:', user.id);
+          
+          const saveResult = await saveJobDescription(user.id, {
+            title: title,
             company_name: '',
             content: jobDescription
           });
-          console.log('Job description saved successfully');
+          
+          console.log('Job description save result:', saveResult);
+          if (!saveResult) {
+            console.error('Job description save returned no data');
+          } else if (Array.isArray(saveResult) && saveResult.length === 0) {
+            console.error('Job description save returned empty array');
+          } else {
+            console.log('Job description saved successfully with ID:', 
+              Array.isArray(saveResult) && saveResult[0] ? saveResult[0].id : 
+              (saveResult as any).id || 'unknown');
+          }
+          
+          // Check if job descriptions exist for the user
+          const jdCount = await checkJobDescriptionsSaved(user.id);
+          console.log(`User has ${jdCount} job descriptions after save`);
+          
         } catch (jobSaveError) {
           console.error('Error saving job description:', jobSaveError);
           // Continue with resume analysis even if job description save fails
@@ -243,7 +326,7 @@ export default function AnalyzePage() {
       );
       
       // Add job description analysis to results
-      analysis.jobDescription = jobDescriptionAnalysis;
+      analysis.jobDescription = jobDescriptionAnalysisResult;
       
       // Set the results
       setResults(analysis);
@@ -255,6 +338,18 @@ export default function AnalyzePage() {
       setError(err.message || "Failed to analyze your resume. Please try again.");
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  // Add a check function to verify job descriptions
+  const checkJobDescriptionsSaved = async (userId: string) => {
+    try {
+      const jobDescriptions = await getUserJobDescriptions(userId);
+      console.log('Current job descriptions for user:', jobDescriptions);
+      return jobDescriptions?.length || 0;
+    } catch (error) {
+      console.error('Error checking job descriptions:', error);
+      return 0;
     }
   };
 
@@ -285,22 +380,55 @@ export default function AnalyzePage() {
     setError("");
 
     try {
-      // If we have a job description, analyze it and save it separately
-      let jobDescriptionAnalysis = null;
-      if (jobDescription && jobTitle) {
-        jobDescriptionAnalysis = await analyzeJobDescription(jobDescription);
+      // Handle job description separately
+      let jobDescriptionAnalysisResult = null;
+      
+      if (jobDescription && jobDescription.trim() !== '') {
+        console.log('Handling job description - length:', jobDescription.length);
         
-        // Save job description as a separate entity
         try {
-          await saveJobDescription(user.id, {
-            title: jobTitle,
+          // 1. Analyze the job description
+          jobDescriptionAnalysisResult = await analyzeJobDescription(jobDescription);
+          console.log('Job description analyzed successfully');
+          
+          // 2. Prepare job title for saving
+          let jobTitleToUse = jobTitle && jobTitle.trim() 
+            ? jobTitle.trim() 
+            : "Untitled Job Description";
+          
+          // If no explicit title provided, try to extract one from the first line
+          if (jobTitleToUse === "Untitled Job Description" && jobDescription.trim()) {
+            const firstLine = jobDescription.split('\n')[0].trim();
+            if (firstLine.length > 0) {
+              jobTitleToUse = firstLine.length > 50 
+                ? firstLine.substring(0, 50) + "..." 
+                : firstLine;
+              
+              // Add a prefix if the title is too short
+              if (jobTitleToUse.length < 10) {
+                jobTitleToUse = "Job Description: " + jobTitleToUse;
+              }
+            }
+          }
+          
+          // 3. Save the job description
+          console.log('Attempting to save job description with title:', jobTitleToUse);
+          const saveResult = await saveJobDescription(user.id, {
+            title: jobTitleToUse,
             company_name: '',
             content: jobDescription
           });
-          console.log('Job description saved successfully');
-        } catch (jobSaveError) {
-          console.error('Error saving job description:', jobSaveError);
-          // Continue with resume save even if job description save fails
+          
+          // 4. Log results
+          console.log('Job description save API response:', saveResult);
+          
+          // 5. Verify job descriptions were saved
+          const jdCount = await checkJobDescriptionsSaved(user.id);
+          console.log(`User has ${jdCount} job descriptions after save attempt`);
+          
+        } catch (jobError) {
+          console.error('Error handling job description:', jobError);
+          // Continue with resume save even if job description fails
         }
       }
 
@@ -316,7 +444,7 @@ export default function AnalyzePage() {
         },
         analysis_results: {
           ...results,
-          jobDescription: jobDescriptionAnalysis
+          jobDescription: jobDescriptionAnalysisResult
         }
       });
 
@@ -441,12 +569,26 @@ export default function AnalyzePage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Textarea 
-                      placeholder="Paste job description here to get personalized recommendations..."
-                      className="min-h-[200px] resize-none border-border bg-background"
-                      value={jobDescription}
-                      onChange={handleJobDescriptionChange}
-                    />
+                    <div className="space-y-4">
+                      <div>
+                        <label htmlFor="job-title" className="block text-sm font-medium mb-2">
+                          Job Title
+                        </label>
+                        <Input 
+                          id="job-title"
+                          placeholder="Enter the job title"
+                          value={jobTitle}
+                          onChange={(e) => setJobTitle(e.target.value)}
+                          className="border-border bg-background"
+                        />
+                      </div>
+                      <Textarea 
+                        placeholder="Paste job description here to get personalized recommendations..."
+                        className="min-h-[200px] resize-none border-border bg-background"
+                        value={jobDescription}
+                        onChange={handleJobDescriptionChange}
+                      />
+                    </div>
                   </CardContent>
                   <CardFooter>
                     <div className="flex items-center text-sm text-muted-foreground">

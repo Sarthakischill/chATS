@@ -87,16 +87,31 @@ export default function CoverLetterPage() {
       return;
     }
     
-    if (!resumeText || !jobDescription || !companyName || !position) {
-      setError("Please fill in all required fields.");
+    if (!resumeText.trim()) {
+      setError("Please upload or enter your resume text");
       return;
     }
     
-    setIsGenerating(true);
+    if (!jobDescription.trim()) {
+      setError("Please enter a job description");
+      return;
+    }
+
+    if (!companyName.trim()) {
+      setError("Please enter a company name");
+      return;
+    }
+
+    if (!position.trim()) {
+      setError("Please enter a job position/title");
+      return;
+    }
+    
     setError("");
+    setIsGenerating(true);
     
     try {
-      // Save job description separately
+      // Save job description to database first
       try {
         await saveJobDescription(user.id, {
           title: `${position} at ${companyName}`,
@@ -138,6 +153,20 @@ export default function CoverLetterPage() {
     setError("");
     
     try {
+      // First save the job description again (in case it wasn't saved during generation)
+      if (jobDescription && position && companyName) {
+        try {
+          await saveJobDescription(user.id, {
+            title: `${position} at ${companyName}`,
+            company_name: companyName,
+            content: jobDescription
+          });
+        } catch (jobSaveError) {
+          console.error('Error saving job description during cover letter save:', jobSaveError);
+          // Continue even if this fails
+        }
+      }
+      
       const result = await saveCoverLetter(user.id, {
         title: `Cover Letter for ${companyName} - ${position}`,
         company: companyName,

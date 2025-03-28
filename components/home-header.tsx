@@ -127,6 +127,15 @@ export function HomeHeader() {
             Cover Letter
           </Link>
           <Link 
+            href="/templates" 
+            className={`text-sm font-medium hover:text-primary transition-colors ${
+              pathname === "/templates" ? "text-primary" : "text-foreground/80"
+            }`}
+            onClick={handleNavigation('/templates')}
+          >
+            Templates
+          </Link>
+          <Link 
             href="/learning" 
             className={`text-sm font-medium hover:text-primary transition-colors ${
               pathname === "/learning" ? "text-primary" : "text-foreground/80"
@@ -215,6 +224,9 @@ export function HomeHeader() {
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/cover-letter" onClick={handleNavigation('/cover-letter')}>Cover Letter</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/templates" onClick={handleNavigation('/templates')}>Templates</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/learning" onClick={handleNavigation('/learning')}>Learning</Link>

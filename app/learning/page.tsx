@@ -25,6 +25,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { saveJobDescription } from '@/lib/supabase';
 
 export default function LearningPage() {
   const { user } = useAuth();
@@ -35,6 +37,7 @@ export default function LearningPage() {
   const [error, setError] = useState("");
   const [resumeText, setResumeText] = useState("");
   const [jobDescription, setJobDescription] = useState("");
+  const [jobTitle, setJobTitle] = useState("");
   const [hasGeneratedRecommendations, setHasGeneratedRecommendations] = useState(false);
   const [hasResume, setHasResume] = useState(false);
   const [isParsingFile, setIsParsingFile] = useState(false);
@@ -239,6 +242,11 @@ export default function LearningPage() {
     }, 1500);
   };
 
+  const handleCloseModal = () => {
+    setShowComingSoonModal(false);
+    router.push("/dashboard");
+  };
+
   // Load user's in-progress courses
   useEffect(() => {
     const loadUserCourses = async () => {
@@ -277,6 +285,34 @@ export default function LearningPage() {
     setIsSaving(true);
     
     try {
+      // First save the job description if it exists
+      if (jobDescription && jobTitle) {
+        try {
+          await saveJobDescription(user.id, {
+            title: jobTitle,
+            company_name: '',
+            content: jobDescription
+          });
+          console.log('Job description saved successfully');
+        } catch (jobSaveError) {
+          console.error('Error saving job description:', jobSaveError);
+          // Continue even if this fails
+        }
+      } else if (jobDescription && !jobTitle) {
+        // Use a default title if no title is provided
+        try {
+          await saveJobDescription(user.id, {
+            title: "Learning Target Position",
+            company_name: '',
+            content: jobDescription
+          });
+          console.log('Job description saved with default title');
+        } catch (jobSaveError) {
+          console.error('Error saving job description:', jobSaveError);
+          // Continue even if this fails
+        }
+      }
+      
       await saveLearningRecommendation(user.id, {
         userId: user.id,
         recommendedCourses,
@@ -378,13 +414,27 @@ export default function LearningPage() {
                   <label htmlFor="job-description" className="block text-sm font-medium mb-2">
                     Target Job Description (Optional) {jobDescription && <span className="text-green-600 text-xs">(Detected)</span>}
                   </label>
-                  <Textarea 
-                    id="job-description"
-                    placeholder="Paste a job description for a role you're targeting..."
-                    value={jobDescription}
-                    onChange={(e) => setJobDescription(e.target.value)}
-                    className="min-h-[150px] resize-none border-border bg-background"
-                  />
+                  <div className="space-y-3">
+                    <div>
+                      <label htmlFor="job-title" className="block text-xs font-medium mb-1">
+                        Job Title
+                      </label>
+                      <Input 
+                        id="job-title"
+                        placeholder="Enter the job title you're targeting..."
+                        value={jobTitle}
+                        onChange={(e) => setJobTitle(e.target.value)}
+                        className="border-border bg-background"
+                      />
+                    </div>
+                    <Textarea 
+                      id="job-description"
+                      placeholder="Paste a job description for a role you're targeting..."
+                      value={jobDescription}
+                      onChange={(e) => setJobDescription(e.target.value)}
+                      className="min-h-[150px] resize-none border-border bg-background"
+                    />
+                  </div>
                 </div>
                 
                 {error && (
@@ -726,7 +776,7 @@ export default function LearningPage() {
               </div>
             </div>
             <DialogFooter className="flex sm:justify-between mt-4">
-              <Button variant="outline" onClick={() => setShowComingSoonModal(false)}>
+              <Button variant="outline" onClick={handleCloseModal}>
                 Close
               </Button>
               <Button className="bg-primary" onClick={handleContinueToPreview}>

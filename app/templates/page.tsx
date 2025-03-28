@@ -5,12 +5,21 @@ import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Download, Eye, Check } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Download, Eye, Check, AlertTriangle, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useRouter } from "next/navigation";
 
 export default function TemplatesPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [showComingSoonModal, setShowComingSoonModal] = useState(true);
+  const router = useRouter();
   
+  const handleCloseModal = () => {
+    setShowComingSoonModal(false);
+    router.push("/dashboard");
+  };
+
   const templates = [
     {
       id: 1,
@@ -107,8 +116,19 @@ export default function TemplatesPage() {
   return (
     <div className="flex flex-col bg-background min-h-screen">
       <Header />
-      <main className="flex-1">
+      <main className="flex-1 pt-16">
         <div className="container max-w-[1200px] mx-auto px-4 py-8">
+          {/* Warning Banner */}
+          <Alert className="mb-6 bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800">
+            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+            <AlertTitle className="text-amber-800 dark:text-amber-300 font-medium">
+              Templates Preview
+            </AlertTitle>
+            <AlertDescription className="text-amber-800 dark:text-amber-300">
+              This feature is currently in beta. Some functionality may be limited as we continue to enhance the resume templates.
+            </AlertDescription>
+          </Alert>
+
           <div className="mb-8">
             <h1 className="text-3xl font-bold">Resume Templates</h1>
             <p className="text-muted-foreground">
@@ -215,6 +235,40 @@ export default function TemplatesPage() {
           </div>
         </div>
       </main>
+
+      {/* Coming Soon Modal */}
+      <Dialog open={showComingSoonModal} onOpenChange={setShowComingSoonModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Coming Soon</DialogTitle>
+            <DialogDescription className="text-base pt-2">
+              This feature is currently under development. The AI-based personalized resume templates will be available soon.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-amber-100 dark:bg-amber-950/40 p-4 rounded-md my-2 border border-amber-300 dark:border-amber-800">
+            <div className="flex items-start">
+              <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-500 mr-3 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-amber-800 dark:text-amber-300">
+                You can preview how this feature will look once it's developed by clicking the Preview button below.
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="flex sm:justify-between mt-4">
+            <Button 
+              variant="outline" 
+              onClick={handleCloseModal}
+            >
+              Close
+            </Button>
+            <Button 
+              className="bg-primary" 
+              onClick={() => setShowComingSoonModal(false)}
+            >
+              Preview Anyway
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 

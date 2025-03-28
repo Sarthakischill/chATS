@@ -50,23 +50,33 @@ export default function Home() {
           <div className="container max-w-[1200px] mx-auto px-4 py-16 relative z-10">
             <div className="flex flex-col items-center justify-center text-center">
               <motion.h1 
-                className="text-5xl md:text-6xl font-bold leading-none max-w-4xl mx-auto relative z-10"
+                className="text-5xl md:text-6xl font-bold leading-none max-w-4xl mx-auto relative z-10 flex flex-col items-center"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
               >
-                <div className="flex flex-wrap justify-center mb-2">
+                <div className="flex flex-wrap justify-center mb-2 w-full">
                   <WordReveal 
-                    text="Optimize your resume for" 
+                    text="Optimize your" 
+                    delay={0.1} 
+                    className="justify-center"
+                  />
+                  <WordReveal 
+                    text=" resume " 
+                    delay={0.1} 
+                    className="justify-center text-primary border-b border-gray-800 dark:border-white"
+                  />
+                  <WordReveal 
+                    text="for" 
                     delay={0.1} 
                     className="justify-center"
                   />
                 </div>
-                <div className="mt-1 relative flex flex-wrap justify-center">
+                <div className="mt-1 relative flex flex-wrap justify-center w-full">
                   <WordReveal 
                     text="ATS" 
                     delay={0.1} 
-                    className="text-primary justify-center relative z-20 mr-2"
+                    className="text-primary border-b border-gray-800 dark:border-white justify-center relative z-20 mr-2"
                   />
                   <WordReveal 
                     text="with" 
@@ -76,18 +86,18 @@ export default function Home() {
                   <WordReveal 
                     text="AI" 
                     delay={0.2} 
-                    className="text-primary justify-center relative z-20"
+                    className="text-primary border-b border-gray-800 dark:border-white justify-center relative z-20"
                   />
                 </div>
               </motion.h1>
               <motion.div 
-                className="mt-8 max-w-2xl mx-auto relative z-10"
+                className="mt-8 max-w-2xl mx-auto relative z-10 w-full text-center"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.3 }}
               >
                 <p className="text-muted-foreground/90 text-base leading-relaxed text-center">
-                  Get your resume noticed by applicant tracking systems. Our AI-powered tool analyzes your resume against job descriptions to increase your chances of landing interviews.
+                  Get your resume noticed by <span className="text-primary border-b border-gray-800 dark:border-white">applicant tracking systems</span>. Our AI-powered tool analyzes your resume against job descriptions to increase your chances of landing interviews.
                 </p>
               </motion.div>
               <motion.div 
@@ -96,7 +106,7 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8 }}
               >
-                <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-md py-2 px-8 h-auto relative z-20">
+                <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-md py-2 px-8 h-auto relative z-20 font-bricolage text-base font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                   <Link href="/analyze">Analyze Resume</Link>
                 </Button>
               </motion.div>

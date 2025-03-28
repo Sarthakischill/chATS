@@ -218,13 +218,20 @@ export async function deleteCoverLetter(userId: string, coverId: string) {
 // Job description functions
 export async function getUserJobDescriptions(userId: string) {
   try {
+    console.log('Getting job descriptions for user:', userId);
+    
     const { data, error } = await supabase
       .from('job_descriptions')
       .select('*')
       .eq('user_id', userId)
       .order('updated_at', { ascending: false });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error in getUserJobDescriptions:', error);
+      throw error;
+    }
+    
+    console.log(`Found ${data?.length || 0} job descriptions for user ${userId}`);
     return data || [];
   } catch (error) {
     console.error('Error fetching job descriptions:', error);
@@ -250,39 +257,99 @@ export async function getJobDescriptionById(jobId: string) {
 
 export async function saveJobDescription(userId: string, jobData: any) {
   try {
+    console.log('saveJobDescription called with userId:', userId);
+    console.log('jobData:', JSON.stringify(jobData, null, 2));
+    
     // Normalize the data to ensure consistent field names
-    const normalizedJobData = {
-      title: jobData.title,
+    const normalizedJobData: {
+      id?: string;
+      title: string;
+      company_name: string;
+      content: string;
+      user_id: string;
+      updated_at: string;
+    } = {
+      title: jobData.title || 'Untitled Job Description',
       company_name: jobData.company_name || '',
-      content: jobData.content || jobData.description, // Handle both field names
+      content: jobData.content || jobData.description || '', // Handle both field names
       user_id: userId,
       updated_at: new Date().toISOString()
     };
+    
+    console.log('Normalized job data:', JSON.stringify(normalizedJobData, null, 2));
 
-    // Check if we're updating an existing job description or creating a new one
-    if (jobData.id) {
-      const { data, error } = await supabase
-        .from('job_descriptions')
-        .update(normalizedJobData)
-        .eq('id', jobData.id)
-        .eq('user_id', userId) // Ensure the user owns this job description
-        .select();
-        
-      if (error) throw error;
-      return data;
+    // Add an ID if not provided
+    if (!jobData.id) {
+      normalizedJobData.id = crypto.randomUUID();
+      console.log('Generated new ID for job description:', normalizedJobData.id);
     } else {
-      const { data, error } = await supabase
+      normalizedJobData.id = jobData.id;
+    }
+
+    try {
+      // Check if we're updating an existing job description or creating a new one
+      if (jobData.id) {
+        console.log('Updating existing job description with ID:', jobData.id);
+        const { data, error } = await supabase
+          .from('job_descriptions')
+          .update(normalizedJobData)
+          .eq('id', jobData.id)
+          .eq('user_id', userId) // Ensure the user owns this job description
+          .select();
+          
+        if (error) {
+          console.error('Supabase update error:', error);
+          throw error;
+        }
+        
+        console.log('Update result:', data);
+        return data;
+      } else {
+        console.log('Inserting new job description');
+        const { data, error } = await supabase
+          .from('job_descriptions')
+          .insert([{
+            ...normalizedJobData,
+            created_at: new Date().toISOString()
+          }])
+          .select();
+          
+        if (error) {
+          console.error('Supabase insert error:', error);
+          throw error;
+        }
+        
+        console.log('Insert result:', data);
+        return data;
+      }
+    } catch (supabaseError) {
+      console.error('Supabase operation failed:', supabaseError);
+      
+      // Try an alternative insert approach if the first method failed
+      console.log('Trying alternative insert approach...');
+      const { data: fallbackData, error: fallbackError } = await supabase
         .from('job_descriptions')
         .insert([{
-          ...normalizedJobData,
-          created_at: new Date().toISOString()
+          id: normalizedJobData.id || crypto.randomUUID(),
+          title: normalizedJobData.title,
+          company_name: normalizedJobData.company_name,
+          content: normalizedJobData.content,
+          user_id: userId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         }])
         .select();
         
-      if (error) throw error;
-      return data;
+      if (fallbackError) {
+        console.error('Fallback insert also failed:', fallbackError);
+        throw fallbackError;
+      }
+      
+      console.log('Fallback insert succeeded:', fallbackData);
+      return fallbackData;
     }
   } catch (error) {
+    console.error('Error in saveJobDescription:', error);
     console.error('Error saving job description:', error);
     throw error;
   }
