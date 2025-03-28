@@ -5,11 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function ProfilePage() {
   return (
-    <div className="flex min-h-screen flex-col bg-muted/40">
+    <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="flex-1 py-12 px-4 sm:px-6">
-        <div className="mx-auto max-w-5xl space-y-8">
+      <main className="container max-w-[1200px] mx-auto px-6 pt-24 pb-16">
+        <div className="space-y-8">
           <div>
             <h1 className="text-3xl font-bold">Account Settings</h1>
             <p className="text-muted-foreground">

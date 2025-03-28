@@ -1,0 +1,16 @@
+{
+  "name": "Resume",
+  "short_name": "Resume",
+  "description": "AI-powered resume analysis and optimization tool",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#F97316",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "32x32",
+      "type": "image/svg+xml"
+    }
+  ]
+} 

@@ -57,9 +57,9 @@ export default function JobDescriptionsPage() {
 
   if (!user) {
     return (
-      <div className="flex flex-col bg-background min-h-screen">
+      <div className="min-h-screen bg-background">
         <Header />
-        <main className="flex-1 container max-w-[1200px] mx-auto px-4 py-8">
+        <main className="container max-w-[1200px] mx-auto px-6 pt-24 pb-16">
           <Alert className="max-w-md mx-auto">
             <AlertDescription>
               Please log in to view your job descriptions.
@@ -71,9 +71,9 @@ export default function JobDescriptionsPage() {
   }
 
   return (
-    <div className="flex flex-col bg-background min-h-screen">
+    <div className="min-h-screen bg-background">
       <Header />
-      <main className="flex-1 container max-w-[1200px] mx-auto px-4 py-8">
+      <main className="container max-w-[1200px] mx-auto px-6 pt-24 pb-16">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold">Your Job Descriptions</h1>

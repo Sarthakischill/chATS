@@ -338,10 +338,10 @@ export default function AnalyzePage() {
   };
 
   return (
-    <div className="flex flex-col bg-background min-h-screen">
+    <div className="min-h-screen bg-background">
       <Header />
-      <main className="flex-1">
-        <div className="container max-w-[1200px] mx-auto px-4 py-8">
+      <main className="container max-w-[1400px] mx-auto pt-24 pb-16 px-6">
+        <div className="space-y-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold">Resume Analysis</h1>
             <p className="text-muted-foreground">Optimize your resume for Applicant Tracking Systems</p>

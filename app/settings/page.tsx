@@ -97,9 +97,9 @@ export default function SettingsPage() {
   
   if (authLoading) {
     return (
-      <div className="flex flex-col bg-background min-h-screen">
+      <div className="min-h-screen bg-background">
         <Header />
-        <main className="flex-1 flex items-center justify-center">
+        <main className="flex items-center justify-center pt-24 pb-16">
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
             <p>Loading...</p>
@@ -111,9 +111,9 @@ export default function SettingsPage() {
   
   if (!user) {
     return (
-      <div className="flex flex-col bg-background min-h-screen">
+      <div className="min-h-screen bg-background">
         <Header />
-        <main className="flex-1 flex items-center justify-center px-4">
+        <main className="flex items-center justify-center px-6 pt-24 pb-16">
           <Card className="max-w-md w-full">
             <CardHeader>
               <CardTitle>Login Required</CardTitle>
@@ -133,11 +133,11 @@ export default function SettingsPage() {
   }
   
   return (
-    <div className="flex min-h-screen flex-col bg-muted/40">
+    <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="flex-1 py-12 px-4 sm:px-6">
-        <div className="mx-auto max-w-3xl space-y-8">
+      <main className="container max-w-[1200px] mx-auto px-6 pt-24 pb-16">
+        <div className="max-w-3xl space-y-8">
           <div>
             <h1 className="text-3xl font-bold">Settings</h1>
             <p className="text-muted-foreground">

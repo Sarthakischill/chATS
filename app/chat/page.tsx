@@ -200,10 +200,9 @@ export default function ChatPage() {
   );
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       <Header />
-      
-      <main className="flex flex-1 container max-w-[1400px] mx-auto px-4 py-6">
+      <main className="container max-w-[1400px] mx-auto pt-24 pb-16 px-6 flex h-[calc(100vh-6rem)]">
         <div className="flex h-[calc(100vh-130px)] w-full rounded-xl overflow-hidden bg-card border border-border/50 shadow-xl">
           {/* Left sidebar for document selection */}
           <div className={`bg-muted ${showDocuments ? 'w-80' : 'w-0'} transition-all duration-300 flex flex-col border-r border-border/40`}>

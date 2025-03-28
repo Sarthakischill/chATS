@@ -171,302 +171,300 @@ export default function CoverLetterPage() {
   };
 
   return (
-    <div className="flex flex-col bg-background min-h-screen">
+    <div className="min-h-screen bg-background">
       <Header />
-      <main className="flex-1">
-        <div className="container max-w-[1200px] mx-auto px-4 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold">Cover Letter Generator</h1>
-            <p className="text-muted-foreground">
-              Create an ATS-optimized cover letter tailored to the job description
-            </p>
-          </div>
+      <main className="container max-w-[1200px] mx-auto px-6 pt-24 pb-16">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold">Cover Letter Generator</h1>
+          <p className="text-muted-foreground">
+            Create an ATS-optimized cover letter tailored to the job description
+          </p>
+        </div>
 
-          {error && error.includes("log in") && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>
-                {error}
-                <div className="mt-2">
-                  <Button variant="outline" size="sm" asChild className="mr-2">
-                    <Link href="/login">Log In</Link>
-                  </Button>
-                  <Button size="sm" asChild>
-                    <Link href="/signup">Sign Up</Link>
-                  </Button>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {!coverLetter ? (
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-6">
-                <Card className="border border-border bg-card">
-                  <CardHeader>
-                    <CardTitle className="text-xl font-semibold">Job Details</CardTitle>
-                    <CardDescription>
-                      Enter information about the position you're applying for
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="company">Company Name</Label>
-                      <Input 
-                        id="company"
-                        placeholder="Enter company name"
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        className="border-border bg-background"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="position">Position</Label>
-                      <Input 
-                        id="position"
-                        placeholder="Enter job title"
-                        value={position}
-                        onChange={(e) => setPosition(e.target.value)}
-                        className="border-border bg-background"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="jobDescription">Job Description</Label>
-                      <Textarea 
-                        id="jobDescription"
-                        placeholder="Paste the complete job description here..."
-                        value={jobDescription}
-                        onChange={(e) => setJobDescription(e.target.value)}
-                        className="min-h-[200px] resize-none border-border bg-background"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="border border-border bg-card">
-                  <CardHeader>
-                    <CardTitle className="text-xl font-semibold">Resume Information</CardTitle>
-                    <CardDescription>
-                      We'll use your resume to customize your cover letter
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-4">
-                      <FileUpload
-                        id="resume-upload"
-                        onFileUpload={handleFileUpload}
-                        acceptedTypes=".pdf,.docx,.doc,.txt"
-                        isLoading={isParsingFile}
-                        file={resumeFile}
-                        error="" 
-                        placeholderText="Upload your resume"
-                        description="PDF, DOCX, or TXT"
-                      />
-
-                      <div>
-                        <label htmlFor="resume-text" className="block text-sm font-medium mb-2">
-                          Resume Text
-                        </label>
-                        <Textarea 
-                          id="resume-text"
-                          placeholder="Your resume content will appear here, or paste it manually..."
-                          value={resumeText}
-                          onChange={(e) => setResumeText(e.target.value)}
-                          className="min-h-[150px] resize-none border-border bg-background"
-                        />
-                      </div>
-                    </div>
-                    
-                    {error && !error.includes("log in") && (
-                      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mt-4 text-sm">
-                        <div className="flex items-start">
-                          <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-                          <span>{error}</span>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+        {error && error.includes("log in") && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              {error}
+              <div className="mt-2">
+                <Button variant="outline" size="sm" asChild className="mr-2">
+                  <Link href="/login">Log In</Link>
+                </Button>
+                <Button size="sm" asChild>
+                  <Link href="/signup">Sign Up</Link>
+                </Button>
               </div>
+            </AlertDescription>
+          </Alert>
+        )}
 
-              <div className="space-y-6">
-                <Card className="border border-border bg-card">
-                  <CardHeader>
-                    <CardTitle className="text-xl font-semibold">Customization Options</CardTitle>
-                    <CardDescription>
-                      Tailor your cover letter to match your preferences
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label htmlFor="formal-tone">Formal Tone</Label>
-                          <p className="text-sm text-muted-foreground">
-                            Use a professional and formal writing style
-                          </p>
-                        </div>
-                        <Switch 
-                          id="formal-tone" 
-                          checked={formalTone}
-                          onCheckedChange={setFormalTone}
-                        />
-                      </div>
-                      
-                      <Separator className="bg-border" />
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label htmlFor="include-skills">Include Specific Skills</Label>
-                          <p className="text-sm text-muted-foreground">
-                            Highlight quantifiable achievements and skills
-                          </p>
-                        </div>
-                        <Switch 
-                          id="include-skills" 
-                          checked={includingSkills}
-                          onCheckedChange={setIncludingSkills}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="border-t border-border pt-4 flex-col">
-                    <Button 
-                      onClick={handleGenerate} 
-                      disabled={(!resumeText && !resumeFile) || !jobDescription || !companyName || !position || isGenerating || isParsingFile}
-                      className="w-full bg-primary"
-                    >
-                      {isGenerating ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating Cover Letter...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="mr-2 h-4 w-4" /> Generate Cover Letter
-                        </>
-                      )}
-                    </Button>
-                  </CardFooter>
-                </Card>
-
-                <Card className="border border-border bg-card">
-                  <CardHeader>
-                    <CardTitle className="text-xl font-semibold">Tips for a Great Cover Letter</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2 text-sm text-muted-foreground">
-                      <li>• Address a specific person when possible</li>
-                      <li>• Include a compelling opening that shows your enthusiasm</li>
-                      <li>• Highlight relevant achievements from your resume</li>
-                      <li>• Explain why you're a good fit for the company culture</li>
-                      <li>• Keep it concise - aim for 250-400 words</li>
-                      <li>• End with a clear call to action</li>
-                      <li>• Proofread carefully before sending</li>
-                    </ul>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          ) : (
+        {!coverLetter ? (
+          <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-6">
               <Card className="border border-border bg-card">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle className="text-xl font-semibold">Generated Cover Letter</CardTitle>
-                    <CardDescription>
-                      Your ATS-optimized cover letter for {companyName}
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleCopy}
-                      className="text-xs flex items-center gap-1"
-                      disabled={copied}
-                    >
-                      {copied ? (
-                        <>
-                          <Check className="h-3.5 w-3.5" />
-                          Copied
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-3.5 w-3.5" />
-                          Copy
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleReset}
-                      className="text-xs flex items-center gap-1"
-                    >
-                      <RotateCcw className="h-3.5 w-3.5" />
-                      Reset
-                    </Button>
-                  </div>
+                <CardHeader>
+                  <CardTitle className="text-xl font-semibold">Job Details</CardTitle>
+                  <CardDescription>
+                    Enter information about the position you're applying for
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="whitespace-pre-wrap rounded-md border border-border bg-background p-4">
-                    {coverLetter}
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="company">Company Name</Label>
+                    <Input 
+                      id="company"
+                      placeholder="Enter company name"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      className="border-border bg-background"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="position">Position</Label>
+                    <Input 
+                      id="position"
+                      placeholder="Enter job title"
+                      value={position}
+                      onChange={(e) => setPosition(e.target.value)}
+                      className="border-border bg-background"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="jobDescription">Job Description</Label>
+                    <Textarea 
+                      id="jobDescription"
+                      placeholder="Paste the complete job description here..."
+                      value={jobDescription}
+                      onChange={(e) => setJobDescription(e.target.value)}
+                      className="min-h-[200px] resize-none border-border bg-background"
+                    />
                   </div>
                 </CardContent>
-                <CardFooter className="flex justify-between">
-                  <Button 
-                    variant="outline" 
-                    className="flex items-center gap-1"
-                    onClick={handleReset}
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                    Create Another
-                  </Button>
-                  <div className="flex gap-2">
-                    <Button 
-                      onClick={handleSave}
-                      disabled={isSaving}
-                      className="flex items-center gap-1"
-                    >
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <FileText className="h-4 w-4" />
-                          Save Cover Letter
-                        </>
-                      )}
-                    </Button>
+              </Card>
+
+              <Card className="border border-border bg-card">
+                <CardHeader>
+                  <CardTitle className="text-xl font-semibold">Resume Information</CardTitle>
+                  <CardDescription>
+                    We'll use your resume to customize your cover letter
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-4">
+                    <FileUpload
+                      id="resume-upload"
+                      onFileUpload={handleFileUpload}
+                      acceptedTypes=".pdf,.docx,.doc,.txt"
+                      isLoading={isParsingFile}
+                      file={resumeFile}
+                      error="" 
+                      placeholderText="Upload your resume"
+                      description="PDF, DOCX, or TXT"
+                    />
+
+                    <div>
+                      <label htmlFor="resume-text" className="block text-sm font-medium mb-2">
+                        Resume Text
+                      </label>
+                      <Textarea 
+                        id="resume-text"
+                        placeholder="Your resume content will appear here, or paste it manually..."
+                        value={resumeText}
+                        onChange={(e) => setResumeText(e.target.value)}
+                        className="min-h-[150px] resize-none border-border bg-background"
+                      />
+                    </div>
                   </div>
+                  
+                  {error && !error.includes("log in") && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mt-4 text-sm">
+                      <div className="flex items-start">
+                        <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+                        <span>{error}</span>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="space-y-6">
+              <Card className="border border-border bg-card">
+                <CardHeader>
+                  <CardTitle className="text-xl font-semibold">Customization Options</CardTitle>
+                  <CardDescription>
+                    Tailor your cover letter to match your preferences
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="formal-tone">Formal Tone</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Use a professional and formal writing style
+                        </p>
+                      </div>
+                      <Switch 
+                        id="formal-tone" 
+                        checked={formalTone}
+                        onCheckedChange={setFormalTone}
+                      />
+                    </div>
+                    
+                    <Separator className="bg-border" />
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="include-skills">Include Specific Skills</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Highlight quantifiable achievements and skills
+                        </p>
+                      </div>
+                      <Switch 
+                        id="include-skills" 
+                        checked={includingSkills}
+                        onCheckedChange={setIncludingSkills}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="border-t border-border pt-4 flex-col">
+                  <Button 
+                    onClick={handleGenerate} 
+                    disabled={(!resumeText && !resumeFile) || !jobDescription || !companyName || !position || isGenerating || isParsingFile}
+                    className="w-full bg-primary"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating Cover Letter...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4" /> Generate Cover Letter
+                      </>
+                    )}
+                  </Button>
                 </CardFooter>
               </Card>
-              
-              {metadata && metadata.keywords && (
-                <Card className="border border-border bg-card">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold">Keywords & Match Analysis</CardTitle>
-                    <CardDescription>
-                      Keywords and phrases detected in the job description and included in your cover letter
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {metadata.keywords.map((keyword: string, i: number) => (
-                        <div key={i} className="bg-primary/10 text-primary px-2 py-1 rounded-md text-sm">
-                          {keyword}
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+
+              <Card className="border border-border bg-card">
+                <CardHeader>
+                  <CardTitle className="text-xl font-semibold">Tips for a Great Cover Letter</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li>• Address a specific person when possible</li>
+                    <li>• Include a compelling opening that shows your enthusiasm</li>
+                    <li>• Highlight relevant achievements from your resume</li>
+                    <li>• Explain why you're a good fit for the company culture</li>
+                    <li>• Keep it concise - aim for 250-400 words</li>
+                    <li>• End with a clear call to action</li>
+                    <li>• Proofread carefully before sending</li>
+                  </ul>
+                </CardContent>
+              </Card>
             </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <Card className="border border-border bg-card">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl font-semibold">Generated Cover Letter</CardTitle>
+                  <CardDescription>
+                    Your ATS-optimized cover letter for {companyName}
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopy}
+                    className="text-xs flex items-center gap-1"
+                    disabled={copied}
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="h-3.5 w-3.5" />
+                        Copied
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5" />
+                        Copy
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleReset}
+                    className="text-xs flex items-center gap-1"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    Reset
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="whitespace-pre-wrap rounded-md border border-border bg-background p-4">
+                  {coverLetter}
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-1"
+                  onClick={handleReset}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Create Another
+                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="flex items-center gap-1"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="h-4 w-4" />
+                        Save Cover Letter
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardFooter>
+            </Card>
+            
+            {metadata && metadata.keywords && (
+              <Card className="border border-border bg-card">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold">Keywords & Match Analysis</CardTitle>
+                  <CardDescription>
+                    Keywords and phrases detected in the job description and included in your cover letter
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {metadata.keywords.map((keyword: string, i: number) => (
+                      <div key={i} className="bg-primary/10 text-primary px-2 py-1 rounded-md text-sm">
+                        {keyword}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
       </main>
     </div>
   );

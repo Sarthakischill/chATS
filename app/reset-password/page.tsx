@@ -81,9 +81,9 @@ export default function ResetPasswordPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex flex-col bg-background min-h-screen">
+      <div className="min-h-screen bg-background">
         <HomeHeader />
-        <main className="flex-1 flex items-center justify-center px-4">
+        <main className="flex items-center justify-center px-6 pt-24 pb-16">
           <Card className="w-full max-w-md">
             <CardHeader>
               <CardTitle className="text-2xl">Invalid Reset Link</CardTitle>
@@ -103,9 +103,9 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex flex-col bg-background min-h-screen">
+    <div className="min-h-screen bg-background">
       <HomeHeader />
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
+      <main className="flex items-center justify-center px-6 pt-24 pb-16">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="text-2xl">Reset your password</CardTitle>

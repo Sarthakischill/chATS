@@ -17,51 +17,130 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { 
+  NavigationMenu,
+  NavigationMenuList,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  navigationMenuTriggerStyle
+} from "@/components/ui/navigation-menu"
+import { usePathname, useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { motion, useScroll, useTransform } from "framer-motion"
 
 export function HomeHeader() {
   const { user, logout, isLoading } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
+  const [scrolled, setScrolled] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const { scrollY } = useScroll();
+  
+  // Transform values for header animations
+  const headerOpacity = useTransform(scrollY, [0, 100], [0.5, 0.95]);
+  const headerBlur = useTransform(scrollY, [0, 100], [6, 12]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const offset = window.scrollY;
+      const progress = Math.min(offset / 200, 1);
+      setScrollProgress(progress);
+      
+      if (offset > 50) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   const handleLogout = async () => {
     await logout();
   };
+  
+  const handleNavigation = (href: string) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (href) {
+      router.push(href);
+    }
+  };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container max-w-[1200px] mx-auto px-4 h-14 flex items-center">
-        <Link href="/" className="mr-8">
-          <span className="text-lg font-bold text-primary">
+    <motion.header 
+      className="fixed top-0 z-50 w-full border-b border-primary/50 transition-all duration-300 h-16 font-bricolage"
+      style={{ 
+        backgroundColor: useTransform(scrollY, [0, 100], ['rgba(var(--background-rgb), 0.6)', 'rgba(var(--background-rgb), 0.75)']),
+        backdropFilter: `blur(12px)`,
+        WebkitBackdropFilter: `blur(12px)`
+      }}
+    >
+      <div 
+        className="container max-w-[1400px] mx-auto px-6 h-full flex items-center"
+        style={{ 
+          transformOrigin: 'center top'
+        }}
+      >
+        <Link 
+          href="/" 
+          className="mr-auto transition-all duration-300"
+          onClick={handleNavigation('/')}
+        >
+          <motion.span 
+            className="font-bold text-primary transition-all duration-300 text-xl font-bricolage"
+            style={{ opacity: useTransform(scrollY, [0, 100], [1, 0.9]) }}
+          >
             chATS
-          </span>
+          </motion.span>
         </Link>
         
-        <nav className="hidden md:flex items-center space-x-6">
+        <nav className="hidden md:flex items-center justify-center flex-1 space-x-10 font-bricolage">
           <Link 
             href="/dashboard" 
-            className="text-sm font-medium hover:text-primary transition-colors text-foreground/80"
+            className={`text-sm font-medium hover:text-primary transition-colors ${
+              pathname === "/dashboard" ? "text-primary" : "text-foreground/80"
+            }`}
+            onClick={handleNavigation('/dashboard')}
           >
             Dashboard
           </Link>
           <Link 
             href="/analyze" 
-            className="text-sm font-medium hover:text-primary transition-colors text-foreground/80"
+            className={`text-sm font-medium hover:text-primary transition-colors ${
+              pathname === "/analyze" ? "text-primary" : "text-foreground/80"
+            }`}
+            onClick={handleNavigation('/analyze')}
           >
-            Resume Analyzer
+            Resume
           </Link>
           <Link 
             href="/cover-letter" 
-            className="text-sm font-medium hover:text-primary transition-colors text-foreground/80"
+            className={`text-sm font-medium hover:text-primary transition-colors ${
+              pathname === "/cover-letter" ? "text-primary" : "text-foreground/80"
+            }`}
+            onClick={handleNavigation('/cover-letter')}
           >
             Cover Letter
           </Link>
           <Link 
             href="/learning" 
-            className="text-sm font-medium hover:text-primary transition-colors text-foreground/80"
+            className={`text-sm font-medium hover:text-primary transition-colors ${
+              pathname === "/learning" ? "text-primary" : "text-foreground/80"
+            }`}
+            onClick={handleNavigation('/learning')}
           >
-            Learning Hub
+            Learning
           </Link>
           <Link 
             href="/chat" 
-            className="text-sm font-medium hover:text-primary transition-colors text-foreground/80"
+            className={`text-sm font-medium hover:text-primary transition-colors ${
+              pathname === "/chat" ? "text-primary" : "text-foreground/80"
+            }`}
+            onClick={handleNavigation('/chat')}
           >
             Chat
           </Link>
@@ -90,13 +169,13 @@ export function HomeHeader() {
                     </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link href="/dashboard">Dashboard</Link>
+                      <Link href="/dashboard" onClick={handleNavigation('/dashboard')}>Dashboard</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/profile">Profile</Link>
+                      <Link href="/profile" onClick={handleNavigation('/profile')}>Profile</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/settings">Settings</Link>
+                      <Link href="/settings" onClick={handleNavigation('/settings')}>Settings</Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
@@ -110,10 +189,10 @@ export function HomeHeader() {
               ) : (
                 <div className="hidden md:flex gap-2">
                   <Button variant="ghost" size="sm" asChild>
-                    <Link href="/login">Login</Link>
+                    <Link href="/login" onClick={handleNavigation('/login')}>Login</Link>
                   </Button>
-                  <Button size="sm" asChild>
-                    <Link href="/signup">Sign Up</Link>
+                  <Button size="sm" asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+                    <Link href="/signup" onClick={handleNavigation('/signup')}>Sign Up</Link>
                   </Button>
                 </div>
               )}
@@ -129,28 +208,28 @@ export function HomeHeader() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="md:hidden">
               <DropdownMenuItem asChild>
-                <Link href="/dashboard">Dashboard</Link>
+                <Link href="/dashboard" onClick={handleNavigation('/dashboard')}>Dashboard</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/analyze">Resume Analyzer</Link>
+                <Link href="/analyze" onClick={handleNavigation('/analyze')}>Resume</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/cover-letter">Cover Letter</Link>
+                <Link href="/cover-letter" onClick={handleNavigation('/cover-letter')}>Cover Letter</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/learning">Learning Hub</Link>
+                <Link href="/learning" onClick={handleNavigation('/learning')}>Learning</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/chat">Chat</Link>
+                <Link href="/chat" onClick={handleNavigation('/chat')}>Chat</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               {user ? (
                 <>
                   <DropdownMenuItem asChild>
-                    <Link href="/profile">Profile</Link>
+                    <Link href="/profile" onClick={handleNavigation('/profile')}>Profile</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/settings">Settings</Link>
+                    <Link href="/settings" onClick={handleNavigation('/settings')}>Settings</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="cursor-pointer"
@@ -162,10 +241,10 @@ export function HomeHeader() {
               ) : (
                 <>
                   <DropdownMenuItem asChild>
-                    <Link href="/login">Login</Link>
+                    <Link href="/login" onClick={handleNavigation('/login')}>Login</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/signup">Sign Up</Link>
+                    <Link href="/signup" onClick={handleNavigation('/signup')}>Sign Up</Link>
                   </DropdownMenuItem>
                 </>
               )}
@@ -173,6 +252,6 @@ export function HomeHeader() {
           </DropdownMenu>
         </div>
       </div>
-    </header>
+    </motion.header>
   )
 } 

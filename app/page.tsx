@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { HomeHeader } from "@/components/home-header"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { FileText, BarChart2, ThumbsUp, LineChart, Star, Check, Zap, Award, Target, FileSearch, BarChartHorizontal, Book } from "lucide-react"
+import { WordReveal } from "@/components/ui/word-reveal"
+import { motion, useScroll } from "framer-motion"
 
 export default function Home() {
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const { scrollY } = useScroll();
 
   useEffect(() => {
     // Initialize the intersection observer for reveal animations
@@ -37,29 +40,66 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="flex flex-col bg-background relative overflow-hidden">
-      <HomeHeader />
-      <main>
+    <div className="flex flex-col bg-background/95 relative overflow-hidden">
+      <div className="relative z-20">
+        <HomeHeader />
+      </div>
+      <main className="relative z-10 pt-16">
         {/* Hero Section */}
-        <section className="min-h-screen flex items-center relative">
-          <div className="container max-w-[1200px] mx-auto px-4 py-16">
-            <div className="flex flex-col items-center text-center">
-              <h1 className="text-6xl font-bold leading-tight">
-                Optimize your resume for <br /><span className="text-primary">ATS</span> with <span className="text-primary">AI</span>
-              </h1>
-              <p className="mt-4 text-muted-foreground max-w-2xl">
-                Get your resume noticed by applicant tracking systems. Our AI-powered tool 
-                analyzes your resume against job descriptions to increase your chances of landing 
-                interviews.
-              </p>
-              <div className="mt-8 flex gap-4 mb-16">
-                <Button asChild className="rounded-md bg-primary hover:bg-primary/90 text-primary-foreground font-medium">
+        <section className="min-h-screen flex items-center justify-center relative">
+          <div className="container max-w-[1200px] mx-auto px-4 py-16 relative z-10">
+            <div className="flex flex-col items-center justify-center text-center">
+              <motion.h1 
+                className="text-5xl md:text-6xl font-bold leading-none max-w-4xl mx-auto relative z-10"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                <div className="flex flex-wrap justify-center mb-2">
+                  <WordReveal 
+                    text="Optimize your resume for" 
+                    delay={0.1} 
+                    className="justify-center"
+                  />
+                </div>
+                <div className="mt-1 relative flex flex-wrap justify-center">
+                  <WordReveal 
+                    text="ATS" 
+                    delay={0.1} 
+                    className="text-primary justify-center relative z-20 mr-2"
+                  />
+                  <WordReveal 
+                    text="with" 
+                    delay={0.15} 
+                    className="text-foreground justify-center relative z-20 mr-2"
+                  />
+                  <WordReveal 
+                    text="AI" 
+                    delay={0.2} 
+                    className="text-primary justify-center relative z-20"
+                  />
+                </div>
+              </motion.h1>
+              <motion.div 
+                className="mt-8 max-w-2xl mx-auto relative z-10"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+              >
+                <p className="text-muted-foreground/90 text-base leading-relaxed text-center">
+                  Get your resume noticed by applicant tracking systems. Our AI-powered tool analyzes your resume against job descriptions to increase your chances of landing interviews.
+                </p>
+              </motion.div>
+              <motion.div 
+                className="mt-10 flex justify-center relative z-10"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+              >
+                <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-md py-2 px-8 h-auto relative z-20">
                   <Link href="/analyze">Analyze Resume</Link>
                 </Button>
-                <Button variant="outline" asChild className="rounded-md border-input hover:bg-accent hover:text-accent-foreground font-medium">
-                  <Link href="/templates">Browse Templates</Link>
-                </Button>
-              </div>
+              </motion.div>
             </div>
           </div>
         </section>
