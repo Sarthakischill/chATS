@@ -149,18 +149,19 @@ export default function AnalyzePage() {
 
     try {
       const id = crypto.randomUUID();
-      const { scores, summary, keywords, formattingIssues, skillsAnalysis, improvementSuggestions } = 
+      const { summary, score, sectionScores, keywordMatches, missingKeywords, strengths, improvements } = 
         await analyzeResume(resumeText, jobDescription);
       
       // Store results in state
       setResults({
         id,
-        scores,
         summary,
-        keywords,
-        formattingIssues,
-        skillsAnalysis,
-        improvementSuggestions,
+        score,
+        sectionScores,
+        keywordMatches,
+        missingKeywords,
+        strengths,
+        improvements,
         timestamp: new Date().toISOString()
       });
       
@@ -327,6 +328,12 @@ export default function AnalyzePage() {
       
       // Add job description analysis to results
       analysis.jobDescription = jobDescriptionAnalysisResult;
+
+      // Ensure sectionScores exists before setting results (interim fix)
+      if (analysis && typeof analysis.sectionScores === 'undefined') {
+        console.log("analyzeResumeWithJobInfo: sectionScores missing from service response, adding default.");
+        analysis.sectionScores = { overall: 0 }; // Default value
+      }
       
       // Set the results
       setResults(analysis);
@@ -766,15 +773,20 @@ export default function AnalyzePage() {
                   <div className="grid gap-6 sm:grid-cols-2">
                     <div>
                       <h3 className="text-sm font-medium mb-3">Section Scores</h3>
-                      {Object.entries(results.sectionScores).map(([key, value]: [string, any]) => (
-                        <div key={key} className="mb-3">
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-sm capitalize">{key}</span>
-                            <span className="text-sm font-medium">{value}%</span>
+                      {results.sectionScores && typeof results.sectionScores === 'object' ? (
+                        Object.entries(results.sectionScores).map(([key, value]: [string, any]) => (
+                          <div key={key} className="mb-3">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-sm capitalize">{key}</span>
+                              <span className="text-sm font-medium">{value}%</span>
+                            </div>
+                            <Progress value={value} className="h-1.5" />
                           </div>
-                          <Progress value={value} className="h-1.5" />
-                        </div>
-                      ))}
+                        ))
+                      ) : (
+                        // Optional: Render a fallback message or null if sectionScores is not available
+                        <p className="text-sm text-muted-foreground">Section scores are not available.</p> 
+                      )}
                     </div>
 
                     <div>
